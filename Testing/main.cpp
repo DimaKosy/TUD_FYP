@@ -1,20 +1,20 @@
 #include <iostream>
 #include <raylib.h>
-#include "world.cpp"
+
 
 int main(int argc, char ** arg){
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth = 800;
-    const int screenHeight = 800;
+    const int screenWidth  = 2*512;
+    const int screenHeight = 2*512;
+    int x = 0;
 
     SetTraceLogLevel(LOG_ERROR); 
     InitWindow(screenWidth, screenHeight, "TED");
-    // srand(0);
+    srand(0);
 
-    world World(screenWidth, screenHeight, 5, 4);
-    World.genNewWorld();
-    
+    Image n = GenImageColor(screenWidth/2, screenHeight/2, WHITE);
+    Texture2D t = LoadTextureFromImage(n);
     
 
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
@@ -27,14 +27,14 @@ int main(int argc, char ** arg){
         //----------------------------------------------------------------------------------
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
-
+        x++;
         // Draw
         //----------------------------------------------------------------------------------
         BeginDrawing();
             
             ClearBackground((Color){ 0, 0, 0, 255 });
-            World.render();
-
+            
+            DrawTexture(t,x,0,WHITE);
             // DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
 
         EndDrawing();
