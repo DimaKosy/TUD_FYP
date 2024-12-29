@@ -4,31 +4,46 @@
 
 class plate{
 private:
+    Vector2 centerPos;
     Vector2 globalPos;
-    Vector2 direction;
-    float speed;
+    Vector2 pos;
     Texture2D mapTexture;
-
     
 public:
     Image localMap;
     Color color;
 
-    plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed);
+    plate(Vector2 centerPos, Image localMap);
+    plate(Vector2 centerPos, Image localMap, Vector2 globalPos);
     ~plate();
+    Vector2 getPlateCenter();
     Vector2 getPos();
     Vector2 getSize();
-    Vector2 getDirection();
-
-    void movePlate();
-    void movePlateWrapped(int wrap_x, int wrap_y);
+    void movePlate(Vector2 pos);
     void setPos(Vector2 pos);
+    void setGlobal(Vector2 pos);
     void setPixel(int x, int y);
     void render(int pos_x, int pos_y);
 };
 
+// initialises the plate
+plate::plate(Vector2 centerPos, Image localMap){
+    this->centerPos = centerPos;
+    this->pos = (Vector2){0,0};
+    this->localMap = localMap;
+    this->color = (Color){
+        .r = (unsigned char)(rand()%256),
+        .g = (unsigned char)(rand()%256),
+        .b = (unsigned char)(rand()%256),
+        .a = 255
+    };
+    
+}
+
 // initialises the plate with global pos
-plate::plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed){
+plate::plate(Vector2 centerPos, Image localMap, Vector2 globalPos){
+    this->centerPos = centerPos;
+    this->pos = (Vector2){0,0};
     this->localMap = localMap;
     this->globalPos = globalPos;
     this->color = (Color){
@@ -37,45 +52,40 @@ plate::plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed){
         .b = (unsigned char)(rand()%256),
         .a = 255
     };
-    this->direction = direction;
-    this->speed = speed;
     
 }
 
 plate::~plate(){
-    printf("closing plate\n");
     UnloadImage(this->localMap);
     UnloadTexture(mapTexture);
 }
 
+Vector2 plate::getPlateCenter(){
+    return (Vector2){
+        pos.x + centerPos.x,
+        pos.y + centerPos.y
+    };
+}
 
 Vector2 plate::getPos(){
     return (Vector2){
-        globalPos.x,
-        globalPos.y
+        pos.x,
+        pos.y
     };
 }
 
 
-
-void plate::movePlate(){
-    this->globalPos.x += this->direction.x * this->speed;
-    this->globalPos.y += this->direction.y * this->speed;
-    // printf("M %f:%f\n",this->pos.x,this->pos.y);
-}
-
-void plate::movePlateWrapped(int wrap_x, int wrap_y){
-    this->globalPos.x += this->direction.x * this->speed;
-    this->globalPos.y += this->direction.y * this->speed;
-
-
-    this->globalPos.x = fmod((wrap_x + this->globalPos.x), wrap_x);
-    this->globalPos.y = fmod((wrap_y + this->globalPos.y), wrap_y);
-
+void plate::movePlate(Vector2 pos){
+    this->pos.x += pos.x;
+    this->pos.y += pos.y;
     // printf("M %f:%f\n",this->pos.x,this->pos.y);
 }
 
 void plate::setPos(Vector2 pos){
+    this->pos = pos;
+}
+
+void plate::setGlobal(Vector2 pos){
     this->globalPos = pos;
 }
 
@@ -102,6 +112,11 @@ void plate::render(int pos_x, int pos_y){
     DrawTexture(mapTexture,
     globalPos.x + pos_x - this->localMap.width/2,
     globalPos.y + pos_y - this->localMap.height/2, 
-    WHITE);    
+    WHITE);
+
+    
+
+    
+    
 }
 #endif

@@ -260,8 +260,8 @@ void world::moveAllPlates(Vector2 pos){
             for(plate * p : pt->getPlates()){
                 Vector2 v = p->getPos();
                 p->setPos((Vector2){
-                    (int)(map_x + v.x +pos.x)%map_x,
-                    (int)(map_y + v.y +pos.y)%map_y
+                    fmod((map_x + v.x +pos.x),map_x),
+                    fmod((map_y + v.y +pos.y),map_y)
                 });
 
             }
