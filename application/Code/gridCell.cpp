@@ -17,10 +17,8 @@ public:
     Vector2 getSize();
 
     void addPlate(plate * p);
-    void addNewPlate(Vector2, Image);
+    void addNewPlate(Vector2 platePos, Image m, Vector2 direction, float speed);
     const std::list<plate *> getPlates();
-    Vector2 getPlateGlobalPos(plate * p);
-    Vector2 getPlateGlobalPos(plate * p, Vector2 offset);
     void deletePlate(int i);
     void popPlate(plate * p);
 };
@@ -36,7 +34,7 @@ gridCell::gridCell(int size_x, int size_y, Vector2 pos){
     // printf("init gridcell\n");
     this->size_x = size_x;
     this->size_y = size_y;
-    printf("Passed %f:%f\n",pos.x, pos.y);
+    // printf("Passed %f:%f\n",pos.x, pos.y);
     this->pos.x = pos.x;
     this->pos.y = pos.y;
 }
@@ -50,34 +48,25 @@ Vector2 gridCell::getSize(){
 // adds plate to grid cell list
 void gridCell::addPlate(plate * p){
     plates.push_back(p);
+    // p->setGlobal(getPlateGlobalPos(p));
+    
 }
 
 // initialises and adds plate to grid cell
-void gridCell::addNewPlate(Vector2 pos, Image m){
+void gridCell::addNewPlate(Vector2 platePos, Image m, Vector2 direction, float speed){
+    printf("NEW PLATE: M %f:%f, speed %f\n",direction.x,direction.y,speed);
     this->plates.push_back( 
     new plate(
-        pos,
-        m
+        m,
+        (Vector2){platePos.x + pos.x, platePos.y + pos.y},
+        direction,
+        speed
     ));
 }
 
 // gets list of plates
 const std::list<plate *> gridCell::getPlates(){
     return this->plates;
-}
-
-Vector2 gridCell::getPlateGlobalPos(plate * p){
-    return (Vector2){
-        pos.x + p->getPlateCenter().x,
-        pos.y + p->getPlateCenter().y
-        };
-}
-
-Vector2 gridCell::getPlateGlobalPos(plate * p, Vector2 offset){
-    return (Vector2){
-        pos.x + p->getPlateCenter().x + offset.x,
-        pos.y + p->getPlateCenter().y + offset.y
-        };
 }
 
 void gridCell::deletePlate(int i){
@@ -90,6 +79,7 @@ void gridCell::popPlate(plate * p){
 }
 
 gridCell::~gridCell(){
+    printf("Closing grid\n");
 }
 
 

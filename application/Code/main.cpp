@@ -5,18 +5,18 @@
 int main(int argc, char ** arg){
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth  = 512;
-    const int screenHeight = 512;
+    const int screenWidth  = 512*1;
+    const int screenHeight = 512*1;
 
     SetTraceLogLevel(LOG_ERROR); 
     InitWindow(screenWidth, screenHeight, "TED");
-    srand(0);
+    // srand(0);
 
     // Setting world parameters
-    world World(screenWidth, screenHeight, 3, 3);
+    world World(screenWidth, screenHeight, 4, 4);
     // World.genNewWorld();
 
-    // World.purge_grids_demo(4);    
+    // World.purge_grids_demo(1,1);    
     
 
     SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
@@ -30,7 +30,20 @@ int main(int argc, char ** arg){
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
 
-        World.moveAllPlates((Vector2){-1,-1});
+        if (IsKeyDown(KEY_UP)){
+            World.moveAllPlates((Vector2){0,-10});
+        }
+        if (IsKeyDown(KEY_DOWN)){
+            World.moveAllPlates((Vector2){0,10});
+        }
+
+        if (IsKeyPressed(KEY_SPACE)){
+            // released = false;
+            World.moveStepPlates();
+        }
+        
+
+        World.updatePlatePositions();
 
         // Draw
         //----------------------------------------------------------------------------------
