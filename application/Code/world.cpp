@@ -14,12 +14,19 @@ private:
     Texture2D worldMap;
     gridCell *** grid;
 
+    void renderCall(int x, int y, int  offset_x, int offset_y);
+
 public:
     world(int map_x, int map_y, int grid_x, int grid_y);
     ~world();
 
     //Generates a world texture
     void init_plates();
+
+    // generates the initial plate hulls
+    void initPlateHull();
+    Vector4 getPerpindicularBisector(Vector2 p1, Vector2 p2);
+    Vector2 getIntersector(Vector3 p1, Vector3 p2);
 
     // additional functions
     float distance(Vector2 p1, Vector2 p2);
@@ -32,6 +39,9 @@ public:
     void moveAllPlates(Vector2 pos);
     void updatePlatePositions();
     
+    // access wrapped neighbour
+    void accessWrappedEdge(void (world::* func)(int x, int y, int offset_x, int offset_y));
+
     //render
     void render();
 
@@ -99,7 +109,7 @@ void world::init_plates(){
                         (rand()%(grid_size_y))
                     },
                     GenImageColor(map_x, map_y, BLACK),
-                    Vector2Normalize((Vector2){rand()%10, rand()%10}),
+                    Vector2Normalize((Vector2){rand()%100, rand()%100}),
                     3 + (rand()%MAX_SPEED)
                 );
         }
@@ -217,8 +227,71 @@ void world::init_plates(){
 
         }
     }
-    printf("Finished pixel assign");
+    printf("Finished pixel assign\n");
+
+    initPlateHull();
     return;
+}
+
+void world::initPlateHull(){
+    int lx[9] = {-1, 0, 1, 1, 1, 0,-1,-1,-1};
+    int ly[9] = {-1,-1,-1, 0, 1, 1, 1, 0,-1};
+
+    for(int x = 0; x < grid_x; x++){
+        for(int y = 0; y < grid_y; y++){
+            plate *p = grid[x][y]->getPlates().front();
+            Vector3 pb_array[9];
+
+            for(int l = 0; l < 9; l++){
+
+                // gets offsets for wrapped points
+                int offset_x = x + lx[l] == -1 ? -map_x : x + lx[l] == grid_x ? map_x : 0;
+                int offset_y = y + ly[l] == -1 ? -map_y : y + ly[l] == grid_y ? map_y : 0;
+
+                plate *p2 = grid[(grid_x + x + lx[l])%grid_x][(grid_y + y + ly[l])%grid_y]->getPlates().front();
+
+                // pb_array[l] = getPerpindicularBisector(p->getPos(), (Vector2){p2->getPos().x + offset_x, p2->getPos().y + offset_y});
+                
+            }
+
+            // for(int i = 0; i < 9; i++){
+            //     Vector2 i1 = getIntersector(pb_array[i],pb_array[(i+1)%9]);
+            //     Vector2 i2 = getIntersector(pb_array[i],pb_array[(i+2)%9]);
+                
+            //     int d1 = distance(p->getPos(), i1);
+            //     int d2 = distance(p->getPos(), i2);
+
+            //     Vector2 res = d1 < d2 ? i1 : i2;
+
+            //     res = {res.x - p->getPos().x, res.x - p->getPos().y};
+
+            //     p->getHull().push_back(res);
+            // }
+
+
+        }
+    }
+}
+
+Vector4 world::getPerpindicularBisector(Vector2 p1, Vector2 p2){
+    // getting midpoint
+    float mx = (p1.x + p2.x) / 2;
+    float my = (p1.y + p2.y) / 2;
+    
+    if (p1.x == p2.x) { // Vertical line segment
+        return (Vector4){mx,my,1,0};
+    }
+    if (p1.y == p2.y) { // Horizontal line segment
+        return (Vector4){mx,my,0,1};
+    }
+
+    
+    return (Vector4){mx,my,0};
+}
+
+Vector2 world::getIntersector(Vector3 p1, Vector3 p2){
+
+    // return (Vector2){x, y};
 }
 
 // Gets the grid by map coords
@@ -237,6 +310,7 @@ Vector2 world::getGridIndex2D(int mx, int my){
 }
 
 void world::moveStepPlates(){
+    
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
 
@@ -295,36 +369,46 @@ float world::distance(Vector2 p1, Vector2 p2) {
     return sqrtf((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y));
 }
 
+void world::accessWrappedEdge(void (world::* func)(int x, int y, int offset_x, int offset_y)){
+    // edges with x||y of 0 or x||y of gridsize-1 must link to their wrapped neighbouring edge
+
+    for(int x = -1; x < grid_x + 1; x++){
+        for(int y = -1; y < grid_y + 1; y++){
+            int rx = (grid_x + x)%grid_x;
+            int ry = (grid_y + y)%grid_y;
+
+            int offset_x = x == -1 ? -map_x : x == grid_x ? map_x : 0;
+            int offset_y = y == -1 ? -map_y : y == grid_y ? map_y : 0;
+
+            (this->*func)(rx, ry, offset_x, offset_y);
+
+
+        }
+    }
+}
 
 // goes through every grid cell and every plate thats in that cell and renders it
-void world::render(){
-    // DrawTexture(worldMap,0,0,WHITE);        
+void world::render(){      
 
-    for(int x = 0; x < grid_x; x++){
-        for(int y = 0; y < grid_y; y++){
-            // printf("Opening %d, %d\n",x,y);
+    accessWrappedEdge(renderCall);
+
+}
+
+void world::renderCall(int x, int y, int  offset_x, int offset_y){
             auto pt = grid[x][y]->getPlates();
-            
-            // offset for plates on edge
-            // int x_offset = x==0?-map_x:
-            // x==grid_x+1?map_x:0;
-            // int y_offset = y==0?-map_y:
-            // y==grid_y+1?map_y:0;
             
 
             if(pt.empty()){
-                continue;
+                return;
             }
             
             BeginBlendMode(BLEND_ADDITIVE);
             for(plate * p : pt){
                 // (*pi)->render(x_offset, y_offset);
-                p->render(0,0);
+                p->render(offset_x, offset_y);
                 
             }
             EndBlendMode();
-        }
-    }
 }
 
 void world::purge_grids_demo(int e_x, int e_y){

@@ -10,16 +10,15 @@ int main(int argc, char ** arg){
 
     SetTraceLogLevel(LOG_ERROR); 
     InitWindow(screenWidth, screenHeight, "TED");
-    // srand(0);
+    srand(0);
 
     // Setting world parameters
-    world World(screenWidth, screenHeight, 4, 4);
+    infiniteWorld World(screenWidth, screenHeight, 4, 4);
     // World.genNewWorld();
 
     // World.purge_grids_demo(1,1);    
-    
 
-    SetTargetFPS(60);               // Set our game to run at 60 frames-per-second
+    SetTargetFPS(1);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
 
     // Main game loop
@@ -30,20 +29,29 @@ int main(int argc, char ** arg){
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
 
-        if (IsKeyDown(KEY_UP)){
-            World.moveAllPlates((Vector2){0,-10});
-        }
-        if (IsKeyDown(KEY_DOWN)){
-            World.moveAllPlates((Vector2){0,10});
+        // if (IsKeyDown(KEY_UP)){
+        //     World.moveAllPlates((Vector2){0,-10});
+        // }
+        // if (IsKeyDown(KEY_DOWN)){
+        //     World.moveAllPlates((Vector2){0,10});
+        // }
+
+        // if (IsKeyDown(KEY_RIGHT)){
+        //     World.moveAllPlates((Vector2){10,0});
+        // }
+        // if (IsKeyDown(KEY_LEFT)){
+        //     World.moveAllPlates((Vector2){-10,0});
+        // }
+
+        if (IsKeyDown(KEY_SPACE)){
+            World.translateWorld(10,0);
+            // World.moveStepPlates();
         }
 
-        if (IsKeyPressed(KEY_SPACE)){
-            // released = false;
-            World.moveStepPlates();
-        }
+        
         
 
-        World.updatePlatePositions();
+        // World.updatePlatePositions();
 
         // Draw
         //----------------------------------------------------------------------------------

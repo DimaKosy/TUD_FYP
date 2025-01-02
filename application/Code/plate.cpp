@@ -6,6 +6,7 @@ class plate{
 private:
     Vector2 globalPos;
     Vector2 direction;
+    std::list<Vector2> hull;
     float speed;
     Texture2D mapTexture;
 
@@ -19,6 +20,7 @@ public:
     Vector2 getPos();
     Vector2 getSize();
     Vector2 getDirection();
+    std::list<Vector2>& getHull();
 
     void movePlate();
     void movePlateWrapped(int wrap_x, int wrap_y);
@@ -56,7 +58,9 @@ Vector2 plate::getPos(){
     };
 }
 
-
+std::list<Vector2>& plate::getHull(){
+    return this->hull;
+}
 
 void plate::movePlate(){
     this->globalPos.x += this->direction.x * this->speed;
@@ -97,6 +101,14 @@ void plate::render(int pos_x, int pos_y){
     UnloadTexture(mapTexture);
     ImageDrawCircle(&this->localMap, 5,5,10,RED);
     ImageDrawCircle(&this->localMap, this->localMap.width/2,this->localMap.height/2,10,BLUE);
+
+
+    for(Vector2 v : this->hull){
+        // printf("%d,%d\n",v.x,v.y);
+        ImageDrawCircle(&this->localMap, v.x + this->localMap.width/2,v.y + this->localMap.height/2,5,GREEN);
+    }
+
+
     mapTexture = LoadTextureFromImage(this->localMap);
     // printf("REN %f:%d,, %f:%d\n",pos.x,pos_x,pos.y,pos_y);
     DrawTexture(mapTexture,

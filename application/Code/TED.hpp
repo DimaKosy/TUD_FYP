@@ -8,10 +8,13 @@
 #include <math.h>
 #include <string>
 #include <list>
+#include <vector>
 
-#include "world.cpp"
 #include "plate.cpp"
 #include "gridCell.cpp"
+#include "infiniteWorld.cpp"
+#include "world.cpp"
+
 
 
 #endif
