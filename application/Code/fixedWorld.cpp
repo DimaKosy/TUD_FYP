@@ -4,7 +4,7 @@
 
 #define MAX_SPEED 2
 
-class world{
+class fixedWorld{
 private:
     int map_x;
     int map_y;
@@ -17,8 +17,8 @@ private:
     void renderCall(int x, int y, int  offset_x, int offset_y);
 
 public:
-    world(int map_x, int map_y, int grid_x, int grid_y);
-    ~world();
+    fixedWorld(int map_x, int map_y, int grid_x, int grid_y);
+    ~fixedWorld();
 
     //Generates a world texture
     void init_plates();
@@ -40,7 +40,7 @@ public:
     void updatePlatePositions();
     
     // access wrapped neighbour
-    void accessWrappedEdge(void (world::* func)(int x, int y, int offset_x, int offset_y));
+    void accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int offset_x, int offset_y));
 
     //render
     void render();
@@ -49,7 +49,7 @@ public:
     void purge_grids_demo(int e_x, int e_y);
 };
 
-world::world(int map_x, int map_y, int grid_x, int grid_y){
+fixedWorld::fixedWorld(int map_x, int map_y, int grid_x, int grid_y){
     Image blankMap = GenImageColor(map_x, map_y, BLACK);
     
 
@@ -73,7 +73,7 @@ world::world(int map_x, int map_y, int grid_x, int grid_y){
     UnloadImage(blankMap);
 }
 
-world::~world(){
+fixedWorld::~fixedWorld(){
     UnloadTexture(this->worldMap);
     // free the grid
     for (int i = 0; i < grid_x; ++i) {
@@ -83,7 +83,7 @@ world::~world(){
 }
 
 // initialises the plates using a voronoi texture based off random points distributed in the grid
-void world::init_plates(){
+void fixedWorld::init_plates(){
     gridCell * grid_temp;
     plate * p;
     
@@ -233,7 +233,7 @@ void world::init_plates(){
     return;
 }
 
-void world::initPlateHull(){
+void fixedWorld::initPlateHull(){
     int lx[9] = {-1, 0, 1, 1, 1, 0,-1,-1,-1};
     int ly[9] = {-1,-1,-1, 0, 1, 1, 1, 0,-1};
 
@@ -273,7 +273,7 @@ void world::initPlateHull(){
     }
 }
 
-Vector4 world::getPerpindicularBisector(Vector2 p1, Vector2 p2){
+Vector4 fixedWorld::getPerpindicularBisector(Vector2 p1, Vector2 p2){
     // getting midpoint
     float mx = (p1.x + p2.x) / 2;
     float my = (p1.y + p2.y) / 2;
@@ -289,13 +289,13 @@ Vector4 world::getPerpindicularBisector(Vector2 p1, Vector2 p2){
     return (Vector4){mx,my,0};
 }
 
-Vector2 world::getIntersector(Vector3 p1, Vector3 p2){
+Vector2 fixedWorld::getIntersector(Vector3 p1, Vector3 p2){
 
     // return (Vector2){x, y};
 }
 
 // Gets the grid by map coords
-Vector2 world::getGridIndex2D(int mx, int my){
+Vector2 fixedWorld::getGridIndex2D(int mx, int my){
     int gx = (mx/(map_x/grid_x));
     int gy = (my/(map_y/grid_y));
 
@@ -309,7 +309,7 @@ Vector2 world::getGridIndex2D(int mx, int my){
     return (Vector2){gx,gy};
 }
 
-void world::moveStepPlates(){
+void fixedWorld::moveStepPlates(){
     
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
@@ -325,7 +325,7 @@ void world::moveStepPlates(){
     }
 }
 
-void world::moveAllPlates(Vector2 pos){
+void fixedWorld::moveAllPlates(Vector2 pos){
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
 
@@ -344,7 +344,7 @@ void world::moveAllPlates(Vector2 pos){
     }
 }
 
-void world::updatePlatePositions(){
+void fixedWorld::updatePlatePositions(){
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
 
@@ -365,11 +365,11 @@ void world::updatePlatePositions(){
     }
 }
 
-float world::distance(Vector2 p1, Vector2 p2) {
+float fixedWorld::distance(Vector2 p1, Vector2 p2) {
     return sqrtf((p2.x - p1.x) * (p2.x - p1.x) + (p2.y - p1.y) * (p2.y - p1.y));
 }
 
-void world::accessWrappedEdge(void (world::* func)(int x, int y, int offset_x, int offset_y)){
+void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int offset_x, int offset_y)){
     // edges with x||y of 0 or x||y of gridsize-1 must link to their wrapped neighbouring edge
 
     for(int x = -1; x < grid_x + 1; x++){
@@ -388,13 +388,13 @@ void world::accessWrappedEdge(void (world::* func)(int x, int y, int offset_x, i
 }
 
 // goes through every grid cell and every plate thats in that cell and renders it
-void world::render(){      
+void fixedWorld::render(){      
 
     accessWrappedEdge(renderCall);
 
 }
 
-void world::renderCall(int x, int y, int  offset_x, int offset_y){
+void fixedWorld::renderCall(int x, int y, int  offset_x, int offset_y){
             auto pt = grid[x][y]->getPlates();
             
 
@@ -411,7 +411,7 @@ void world::renderCall(int x, int y, int  offset_x, int offset_y){
             EndBlendMode();
 }
 
-void world::purge_grids_demo(int e_x, int e_y){
+void fixedWorld::purge_grids_demo(int e_x, int e_y){
     
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){

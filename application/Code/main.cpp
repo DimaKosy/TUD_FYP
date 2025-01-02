@@ -1,6 +1,6 @@
 #include <iostream>
 #include <raylib.h>
-#include "world.cpp"
+#include "TED.hpp"
 
 int main(int argc, char ** arg){
     // Initialization

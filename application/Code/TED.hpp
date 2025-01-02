@@ -13,7 +13,7 @@
 #include "plate.cpp"
 #include "gridCell.cpp"
 #include "infiniteWorld.cpp"
-#include "world.cpp"
+#include "fixedWorld.cpp"
 
 
 
