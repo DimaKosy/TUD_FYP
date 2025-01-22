@@ -129,8 +129,8 @@ void infiniteWorld::translateWorld(int x, int y){
 
             for(int ix = 0; ix < grid_y; ix++){
                 // grid[ix][cy];
-                printf("%d:%d\t",ix,cy);
-                printf("P= %f:%f\n",this->offset_x, this->offset_y);
+                printf("%d:%d\n",ix,cy);
+                
             }
         break;
         case 1: //Bottommost
@@ -144,6 +144,8 @@ void infiniteWorld::translateWorld(int x, int y){
         default:
         break;
     }
+
+    printf("P= %d:%d\n",ox * grid_size_x, oy * grid_size_y);
 
     this->offset_x = ox;
     this->offset_y = oy;
