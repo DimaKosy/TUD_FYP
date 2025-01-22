@@ -5,7 +5,7 @@
 class gridCell{
 private:
     std::list<plate *> plates;
-    
+    Vector2 pos;
     int size_x;
     int size_y;
 public:
@@ -13,8 +13,9 @@ public:
     
     gridCell(int size_x, int size_y, Vector2 pos);
     ~gridCell();
-    Vector2 pos;
+    
     Vector2 getSize();
+    Vector2 getPos();
 
     void addPlate(plate * p);
     void addNewPlate(Vector2 platePos, Image m, Vector2 direction, float speed);
@@ -44,6 +45,10 @@ Vector2 gridCell::getSize(){
     return (Vector2){this->size_x, this->size_y};
 }
 
+// get grid top left corner position
+Vector2 gridCell::getPos(){
+    return this->pos;
+}
 
 // adds plate to grid cell list
 void gridCell::addPlate(plate * p){

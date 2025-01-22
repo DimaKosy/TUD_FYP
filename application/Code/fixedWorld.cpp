@@ -381,8 +381,6 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
             int offset_y = y == -1 ? -map_y : y == grid_y ? map_y : 0;
 
             (this->*func)(rx, ry, offset_x, offset_y);
-
-
         }
     }
 }

@@ -29,24 +29,24 @@ int main(int argc, char ** arg){
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
 
-        // if (IsKeyDown(KEY_UP)){
-        //     World.moveAllPlates((Vector2){0,-10});
-        // }
-        // if (IsKeyDown(KEY_DOWN)){
-        //     World.moveAllPlates((Vector2){0,10});
-        // }
-
-        // if (IsKeyDown(KEY_RIGHT)){
-        //     World.moveAllPlates((Vector2){10,0});
-        // }
-        // if (IsKeyDown(KEY_LEFT)){
-        //     World.moveAllPlates((Vector2){-10,0});
-        // }
-
-        if (IsKeyDown(KEY_SPACE)){
-            World.translateWorld(10,0);
-            // World.moveStepPlates();
+        if (IsKeyDown(KEY_UP)){
+            World.translateWorld(0,-30);
         }
+        if (IsKeyDown(KEY_DOWN)){
+            World.translateWorld(0,30);
+        }
+
+        if (IsKeyDown(KEY_RIGHT)){
+            World.translateWorld(30,0);
+        }
+        if (IsKeyDown(KEY_LEFT)){
+            World.translateWorld(-30,0);
+        }
+
+        // if (IsKeyDown(KEY_SPACE)){
+        //     World.translateWorld(-30,0);
+        //     // World.moveStepPlates();
+        // }
 
         
         
