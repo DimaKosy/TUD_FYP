@@ -8,14 +8,17 @@ private:
     Vector2 pos;
     int size_x;
     int size_y;
+    int grid_seed;
 public:
     gridCell();
     
-    gridCell(int size_x, int size_y, Vector2 pos);
+    gridCell(int size_x, int size_y, Vector2 pos,int seed);
     ~gridCell();
     
     Vector2 getSize();
     Vector2 getPos();
+
+    void regenGridCell(Vector2 pos);
 
     void addPlate(plate * p);
     void addNewPlate(Vector2 platePos, Image m, Vector2 direction, float speed);
@@ -24,20 +27,21 @@ public:
     void popPlate(plate * p);
 };
 
-gridCell::gridCell(){
+// gridCell::gridCell(){
 
-}
+// }
 
 
 
 // initialises the grid cell
-gridCell::gridCell(int size_x, int size_y, Vector2 pos){
+gridCell::gridCell(int size_x, int size_y, Vector2 pos,int seed){
     // printf("init gridcell\n");
     this->size_x = size_x;
     this->size_y = size_y;
     // printf("Passed %f:%f\n",pos.x, pos.y);
     this->pos.x = pos.x;
     this->pos.y = pos.y;
+    this->grid_seed = seed;
 }
 
 // Get size og gridcell
@@ -48,6 +52,18 @@ Vector2 gridCell::getSize(){
 // get grid top left corner position
 Vector2 gridCell::getPos(){
     return this->pos;
+}
+
+// regens the plate, changing position and generating anew plate
+void gridCell::regenGridCell(Vector2 pos){
+    this->pos.x = pos.x;
+    this->pos.y = pos.y;
+
+    for(int i = 0; i < plates.size(); i++){
+        delete plates.front();
+    }
+
+    // addNewPlate()
 }
 
 // adds plate to grid cell list

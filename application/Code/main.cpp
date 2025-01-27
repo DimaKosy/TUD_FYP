@@ -13,10 +13,10 @@ int main(int argc, char ** arg){
     srand(0);
 
     // Setting world parameters
-    infiniteWorld World(screenWidth, screenHeight, 4, 4);
+    fixedWorld World(screenWidth, screenHeight, 4, 4, time(0));
     // World.genNewWorld();
 
-    // World.purge_grids_demo(1,1);    
+    World.purge_grids_demo(1,1);    
 
     SetTargetFPS(1);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
@@ -29,19 +29,19 @@ int main(int argc, char ** arg){
         // TODO: Update your variables here
         //----------------------------------------------------------------------------------
 
-        if (IsKeyDown(KEY_UP)){
-            World.translateWorld(0,-30);
-        }
-        if (IsKeyDown(KEY_DOWN)){
-            World.translateWorld(0,30);
-        }
+        // if (IsKeyDown(KEY_UP)){
+        //     World.translateWorld(0,-30);
+        // }
+        // if (IsKeyDown(KEY_DOWN)){
+        //     World.translateWorld(0,30);
+        // }
 
-        if (IsKeyDown(KEY_RIGHT)){
-            World.translateWorld(30,0);
-        }
-        if (IsKeyDown(KEY_LEFT)){
-            World.translateWorld(-30,0);
-        }
+        // if (IsKeyDown(KEY_RIGHT)){
+        //     World.translateWorld(30,0);
+        // }
+        // if (IsKeyDown(KEY_LEFT)){
+        //     World.translateWorld(-30,0);
+        // }
 
         // if (IsKeyDown(KEY_SPACE)){
         //     World.translateWorld(-30,0);

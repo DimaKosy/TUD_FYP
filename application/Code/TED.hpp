@@ -5,7 +5,7 @@
 #include <raylib.h>
 #include <raymath.h>
 #include <rlgl.h>
-#include <math.h>
+#include <cmath>
 #include <string>
 #include <list>
 #include <vector>

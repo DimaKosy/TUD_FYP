@@ -7,6 +7,7 @@ private:
     Vector2 globalPos;
     Vector2 direction;
     std::list<Vector2> hull;
+    
     float speed;
     Texture2D mapTexture;
 
@@ -14,6 +15,7 @@ private:
 public:
     Image localMap;
     Color color;
+    std::list<Vector2> mpoints;
 
     plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed);
     ~plate();
@@ -106,6 +108,11 @@ void plate::render(int pos_x, int pos_y){
     for(Vector2 v : this->hull){
         // printf("%d,%d\n",v.x,v.y);
         ImageDrawCircle(&this->localMap, v.x + this->localMap.width/2,v.y + this->localMap.height/2,5,GREEN);
+    }
+
+    for(Vector2 v : this->mpoints){
+        // printf("%d,%d\n",v.x,v.y);
+        ImageDrawCircle(&this->localMap, v.x + this->localMap.width/2,v.y + this->localMap.height/2,5,RED);
     }
 
 

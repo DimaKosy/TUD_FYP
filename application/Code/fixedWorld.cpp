@@ -11,13 +11,15 @@ private:
     int grid_x;
     int grid_y;
 
+    int world_seed;
+
     Texture2D worldMap;
     gridCell *** grid;
 
     void renderCall(int x, int y, int  offset_x, int offset_y);
 
 public:
-    fixedWorld(int map_x, int map_y, int grid_x, int grid_y);
+    fixedWorld(int map_x, int map_y, int grid_x, int grid_y, int seed);
     ~fixedWorld();
 
     //Generates a world texture
@@ -25,7 +27,7 @@ public:
 
     // generates the initial plate hulls
     void initPlateHull();
-    Vector4 getPerpindicularBisector(Vector2 p1, Vector2 p2);
+    Vector3 getPerpindicularBisector(Vector2 p1, Vector2 p2);
     Vector2 getIntersector(Vector3 p1, Vector3 p2);
 
     // additional functions
@@ -49,7 +51,7 @@ public:
     void purge_grids_demo(int e_x, int e_y);
 };
 
-fixedWorld::fixedWorld(int map_x, int map_y, int grid_x, int grid_y){
+fixedWorld::fixedWorld(int map_x, int map_y, int grid_x, int grid_y, int seed){
     Image blankMap = GenImageColor(map_x, map_y, BLACK);
     
 
@@ -59,6 +61,7 @@ fixedWorld::fixedWorld(int map_x, int map_y, int grid_x, int grid_y){
     this->grid_x = grid_x;
     this->grid_y = grid_y;
 
+    this->world_seed = seed;
 
     // initialise the grid
     this->grid = new gridCell ** [grid_x];
@@ -100,7 +103,7 @@ void fixedWorld::init_plates(){
             
             // initialises and assigns a new grid cell
             // printf("Should be %d:%d\n",x*grid_size_x,y*grid_size_y);
-            this->grid[x][y] = new gridCell(grid_size_x, grid_size_y,(Vector2){ x * grid_size_x, y * grid_size_y});;
+            this->grid[x][y] = new gridCell(grid_size_x, grid_size_y,(Vector2){ x * grid_size_x, y * grid_size_y}, world_seed);;
 
             // adds a new plate to the grid cell with its center in a random position in the grid cell
             this->grid[x][y]->addNewPlate(
@@ -250,48 +253,90 @@ void fixedWorld::initPlateHull(){
 
                 plate *p2 = grid[(grid_x + x + lx[l])%grid_x][(grid_y + y + ly[l])%grid_y]->getPlates().front();
 
-                // pb_array[l] = getPerpindicularBisector(p->getPos(), (Vector2){p2->getPos().x + offset_x, p2->getPos().y + offset_y});
-                
+                pb_array[l] = getPerpindicularBisector(p->getPos(), (Vector2){p2->getPos().x + offset_x, p2->getPos().y + offset_y});
+
+
+                float mx = (p->getPos().x + p2->getPos().x) / 2.0;
+                float my = (p->getPos().y + p2->getPos().y) / 2.0;
+                p->getHull().push_back((Vector2){mx  - p->getPos().x, my - p->getPos().y});
             }
 
-            // for(int i = 0; i < 9; i++){
-            //     Vector2 i1 = getIntersector(pb_array[i],pb_array[(i+1)%9]);
-            //     Vector2 i2 = getIntersector(pb_array[i],pb_array[(i+2)%9]);
+            for(int i = 0; i < 9; i++){
+                Vector2 i1 = getIntersector(pb_array[i],pb_array[(i+1)%9]);
+                Vector2 i2 = getIntersector(pb_array[(i+1)%9],pb_array[(i+2)%9]);
                 
-            //     int d1 = distance(p->getPos(), i1);
-            //     int d2 = distance(p->getPos(), i2);
+                
+                
 
-            //     Vector2 res = d1 < d2 ? i1 : i2;
+                // checks for valid Vectors
+                Vector2 res;
+                if(std::isnan(static_cast<double>(i1.x))
+                && std::isnan(static_cast<double>(i2.x))){
+                    printf("FAILED BOTH\n");
+                }
+                printf("%f:%f\n",i1.x,i2.x);
+                if(std::isnan(static_cast<double>(i1.x))){
+                    printf("SET 2\n");
+                    res = i2;
+                }
+                else if(std::isnan(static_cast<double>(i2.x))){
+                    printf("SET 1\n");
+                    res = i1;
+                }
+                else{
+                    printf("SET 0\n");
+                    // finds closest Vector
+                    int d1 = distance(p->getPos(), i1);
+                    int d2 = distance(p->getPos(), i2);
+                    
+                    res = d1 < d2 ? i1 : i2;
+                }
+                printf("OUT %f:%f\n",res.x, res.y);
+                res = {res.x + p->getPos().x, res.y + p->getPos().y};
 
-            //     res = {res.x - p->getPos().x, res.x - p->getPos().y};
-
-            //     p->getHull().push_back(res);
-            // }
+                p->getHull().push_back(res);
+            }
 
 
         }
     }
 }
 
-Vector4 fixedWorld::getPerpindicularBisector(Vector2 p1, Vector2 p2){
+Vector3 fixedWorld::getPerpindicularBisector(Vector2 p1, Vector2 p2){
     // getting midpoint
-    float mx = (p1.x + p2.x) / 2;
-    float my = (p1.y + p2.y) / 2;
+    float mx = (p1.x + p2.x) / 2.0;
+    float my = (p1.y + p2.y) / 2.0;
+
+    // slopes
+    float dx = p2.x - p1.x;
+    float dy = p2.y - p1.y;
     
-    if (p1.x == p2.x) { // Vertical line segment
-        return (Vector4){mx,my,1,0};
+    if (dy == 0) { // Vertical line segment
+        return (Vector3){1,0,-mx};
     }
-    if (p1.y == p2.y) { // Horizontal line segment
-        return (Vector4){mx,my,0,1};
+    if (dx == 0) { // Horizontal line segment
+        return (Vector3){0,1,-my};
     }
 
+    float slope = -dx/dy;
     
-    return (Vector4){mx,my,0};
+    return (Vector3){slope,-1,my - slope * mx};
 }
 
 Vector2 fixedWorld::getIntersector(Vector3 p1, Vector3 p2){
 
-    // return (Vector2){x, y};
+    
+    double det = p1.x * p2.y - p2.x * p1.y;
+
+    if (det == 0) {
+        // Lines are parallel
+        printf("FAILED INTERSECT\n");
+        return (Vector2){NAN, NAN};
+    }
+    return (Vector2){
+        (p2.y * p1.z - p1.y * p2.z) / det,
+        (p1.x * p2.z - p2.x * p1.z) / det
+    };
 }
 
 // Gets the grid by map coords

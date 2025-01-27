@@ -16,11 +16,12 @@ private:
     int world_y;
     int grid_size_x;
     int grid_size_y;
+    int world_seed;
 
     Texture2D worldMap;
     gridCell *** grid;
 public:
-    infiniteWorld(int map_x, int map_y, int grid_x, int grid_y);
+    infiniteWorld(int map_x, int map_y, int grid_x, int grid_y, int seed);
     ~infiniteWorld();
 
     void translateWorld(int x, int y);
@@ -28,7 +29,7 @@ public:
     void render();
 };
 
-infiniteWorld::infiniteWorld(int map_x, int map_y, int grid_x, int grid_y){
+infiniteWorld::infiniteWorld(int map_x, int map_y, int grid_x, int grid_y, int seed){
     Image blankMap = GenImageColor(map_x, map_y, BLACK);
     
 
@@ -46,6 +47,8 @@ infiniteWorld::infiniteWorld(int map_x, int map_y, int grid_x, int grid_y){
     this->grid_size_x = map_x/grid_x;
     this->grid_size_y = map_y/grid_y;
 
+    this->world_seed = seed;
+
     // initialise the grid
     this->grid = new gridCell ** [this->grid_x];
     for (int i = 0; i < this->grid_x; i++) {
@@ -57,9 +60,9 @@ infiniteWorld::infiniteWorld(int map_x, int map_y, int grid_x, int grid_y){
 
             
             // initialises and assigns a new grid cell
-            this->grid[x][y] = new gridCell(grid_size_x, grid_size_y,(Vector2){ (x-1) * grid_size_x, (y-1) * grid_size_y});;
-
-                        this->grid[x][y]->addNewPlate(
+            this->grid[x][y] = new gridCell(grid_size_x, grid_size_y,(Vector2){ (x-1) * grid_size_x, (y-1) * grid_size_y}, world_seed);;
+                srand(world_seed + ((x-1) * grid_size_x) + ((y-1) * grid_size_y));
+                this->grid[x][y]->addNewPlate(
                     (Vector2){
                         (rand()%(grid_size_x)),
                         (rand()%(grid_size_y))
@@ -68,6 +71,15 @@ infiniteWorld::infiniteWorld(int map_x, int map_y, int grid_x, int grid_y){
                     Vector2Normalize((Vector2){rand()%100, rand()%100}),
                     3 + (rand()%MAX_SPEED)
                 );
+            
+
+            // initialise the plate
+
+            for(int xi = -1; xi <= 1; xi++){
+                for(int yi = -1; yi <= 1; yi++){
+                    
+                }
+            }
         }
     }
     
@@ -144,8 +156,8 @@ void infiniteWorld::translateWorld(int x, int y){
         default:
         break;
     }
-
-    printf("P= %d:%d\n",ox * grid_size_x, oy * grid_size_y);
+    
+    // printf("P= %d:%d\n", grid_x * grid_size_x, grid_y * grid_size_y);
 
     this->offset_x = ox;
     this->offset_y = oy;
