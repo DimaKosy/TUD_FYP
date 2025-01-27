@@ -3,7 +3,7 @@
 #include "TED.hpp"
 
 #define MAX_SPEED 2
-
+#define PH_COUNT 8
 class fixedWorld{
 private:
     int map_x;
@@ -237,6 +237,7 @@ void fixedWorld::init_plates(){
 }
 
 void fixedWorld::initPlateHull(){
+    // creating winding order
     int lx[9] = {-1, 0, 1, 1, 1, 0,-1,-1,-1};
     int ly[9] = {-1,-1,-1, 0, 1, 1, 1, 0,-1};
 
@@ -245,11 +246,11 @@ void fixedWorld::initPlateHull(){
             plate *p = grid[x][y]->getPlates().front();
             Vector3 pb_array[9];
 
-            for(int l = 0; l < 9; l++){
+            for(int l = 0; l < PH_COUNT; l++){
 
                 // gets offsets for wrapped points
-                int offset_x = x + lx[l] == -1 ? -map_x : x + lx[l] == grid_x ? map_x : 0;
-                int offset_y = y + ly[l] == -1 ? -map_y : y + ly[l] == grid_y ? map_y : 0;
+                int offset_x = (x + lx[l] == -1) ? -map_x : x + lx[l] == grid_x ? map_x : 0;
+                int offset_y = (y + ly[l] == -1) ? -map_y : y + ly[l] == grid_y ? map_y : 0;
 
                 plate *p2 = grid[(grid_x + x + lx[l])%grid_x][(grid_y + y + ly[l])%grid_y]->getPlates().front();
 
@@ -258,18 +259,18 @@ void fixedWorld::initPlateHull(){
 
                 float mx = (p->getPos().x + p2->getPos().x) / 2.0;
                 float my = (p->getPos().y + p2->getPos().y) / 2.0;
-                p->getHull().push_back((Vector2){mx  - p->getPos().x, my - p->getPos().y});
+                p->mpoints.push_back((Vector2){mx  - p->getPos().x, my - p->getPos().y});
             }
 
-            for(int i = 0; i < 9; i++){
-                Vector2 i1 = getIntersector(pb_array[i],pb_array[(i+1)%9]);
-                Vector2 i2 = getIntersector(pb_array[(i+1)%9],pb_array[(i+2)%9]);
+            for(int i = 0; i < PH_COUNT; i++){
+                Vector2 i1 = getIntersector(pb_array[i%PH_COUNT],pb_array[(i+1)%PH_COUNT]);
+                Vector2 i2 = getIntersector(pb_array[(PH_COUNT + i - 1)%PH_COUNT],pb_array[(i+1)%PH_COUNT]);
                 
                 
                 
 
                 // checks for valid Vectors
-                Vector2 res;
+                Vector2 res = {0, 0}; ;
                 if(std::isnan(static_cast<double>(i1.x))
                 && std::isnan(static_cast<double>(i2.x))){
                     printf("FAILED BOTH\n");
@@ -286,13 +287,13 @@ void fixedWorld::initPlateHull(){
                 else{
                     printf("SET 0\n");
                     // finds closest Vector
-                    int d1 = distance(p->getPos(), i1);
-                    int d2 = distance(p->getPos(), i2);
+                    int d1 = distance(p->getPos(), i1); //(Vector2){0,0}
+                    int d2 = distance(p->getPos(), i2); //(Vector2){0,0}
                     
                     res = d1 < d2 ? i1 : i2;
                 }
                 printf("OUT %f:%f\n",res.x, res.y);
-                res = {res.x + p->getPos().x, res.y + p->getPos().y};
+                res = {res.x - p->getPos().x, res.y - p->getPos().y};
 
                 p->getHull().push_back(res);
             }
@@ -312,15 +313,15 @@ Vector3 fixedWorld::getPerpindicularBisector(Vector2 p1, Vector2 p2){
     float dy = p2.y - p1.y;
     
     if (dy == 0) { // Vertical line segment
-        return (Vector3){1,0,-mx};
+        return (Vector3){1,0,mx};
     }
     if (dx == 0) { // Horizontal line segment
-        return (Vector3){0,1,-my};
+        return (Vector3){0,1,my};
     }
 
     float slope = -dx/dy;
     
-    return (Vector3){slope,-1,my - slope * mx};
+    return (Vector3){-slope,1,my - slope * mx};
 }
 
 Vector2 fixedWorld::getIntersector(Vector3 p1, Vector3 p2){
