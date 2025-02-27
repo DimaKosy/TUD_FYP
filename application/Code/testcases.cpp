@@ -1,4 +1,4 @@
-#include "TED.hpp"
+#include "TED_TEST.hpp"
 
 #define P_N 4
 
@@ -18,11 +18,11 @@ int main(int argc, char ** arg){
 
 
     
-    // Vector2 exclude2[] = {
-    //     {1,1},
-    //     {2,1}
-    // };
-    // World.purge_grids_demo(exclude2, 2);   
+    Vector2 exclude2[] = {
+        {1,1},
+        {2,1}
+    };
+    World.purge_grids_demo(exclude2, 2);   
     
     
 
@@ -56,11 +56,10 @@ int main(int argc, char ** arg){
             World.moveStepPlates();
         }
 
-        if (IsKeyDown(KEY_LEFT_ALT)){
+        if (IsKeyPressed(KEY_LEFT_ALT)){
             Vector2 exclude[] = {
                 {1,1}
             };
-            // World.moveStepPlates();
             World.purge_grids_demo(exclude,1);
         }
 

@@ -9,7 +9,10 @@
 #include <string>
 #include <list>
 #include <vector>
+#include <sstream>
+#include <algorithm>
 
+#include "collisionFunctions.cpp"
 #include "plate.cpp"
 #include "gridCell.cpp"
 #include "infiniteWorld.cpp"

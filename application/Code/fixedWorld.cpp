@@ -4,6 +4,8 @@
 
 #define MAX_SPEED 2
 #define PH_COUNT 8
+#define COL_SEARCH_RAD 2
+
 class fixedWorld{
 private:
     int map_x;
@@ -27,9 +29,7 @@ public:
 
     // generates the initial plate hulls
     void initPlateHull();
-    Vector3 getPerpindicularBisector(Vector2 p1, Vector2 p2);
-    Vector2 getIntersector(Vector3 p1, Vector3 p2);
-
+    
     // additional functions
     float distance(Vector2 p1, Vector2 p2);
 
@@ -48,7 +48,7 @@ public:
     void render();
 
     //demo functions
-    void purge_grids_demo(int e_x, int e_y);
+    void purge_grids_demo(Vector2 exclude[], int length);
 };
 
 fixedWorld::fixedWorld(int map_x, int map_y, int grid_x, int grid_y, int seed){
@@ -243,6 +243,7 @@ void fixedWorld::initPlateHull(){
 
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
+            printf("GRID %d:%d\n",x,y);
             plate *p = grid[x][y]->getPlates().front();
             Vector3 pb_array[9];
 
@@ -257,87 +258,67 @@ void fixedWorld::initPlateHull(){
                 pb_array[l] = getPerpindicularBisector(p->getPos(), (Vector2){p2->getPos().x + offset_x, p2->getPos().y + offset_y});
 
 
-                float mx = (p->getPos().x + p2->getPos().x) / 2.0;
-                float my = (p->getPos().y + p2->getPos().y) / 2.0;
+                float mx = (p->getPos().x + p2->getPos().x + offset_x) / 2.0;
+                float my = (p->getPos().y + p2->getPos().y + offset_y) / 2.0;
                 p->mpoints.push_back((Vector2){mx  - p->getPos().x, my - p->getPos().y});
             }
 
             for(int i = 0; i < PH_COUNT; i++){
-                Vector2 i1 = getIntersector(pb_array[i%PH_COUNT],pb_array[(i+1)%PH_COUNT]);
-                Vector2 i2 = getIntersector(pb_array[(PH_COUNT + i - 1)%PH_COUNT],pb_array[(i+1)%PH_COUNT]);
+                Vector2 i1 = getIntersector(pb_array[i%PH_COUNT],pb_array[(i+1)%PH_COUNT]); //Current and next
+                Vector2 i2 = getIntersector(pb_array[(PH_COUNT + i - 1)%PH_COUNT],pb_array[(i+1)%PH_COUNT]); // Previous and Next
+                Vector2 i3 = getIntersector(pb_array[i],pb_array[(i+2)%PH_COUNT]); // Current and Two ahead
                 
                 
                 
 
                 // checks for valid Vectors
-                Vector2 res = {0, 0}; ;
+                Vector2 res = {0, 0};
                 if(std::isnan(static_cast<double>(i1.x))
-                && std::isnan(static_cast<double>(i2.x))){
-                    printf("FAILED BOTH\n");
+                && std::isnan(static_cast<double>(i2.x))
+                && std::isnan(static_cast<double>(i3.x))
+                ){
+                    printf("FAILED MULTI\n");
                 }
-                printf("%f:%f\n",i1.x,i2.x);
-                if(std::isnan(static_cast<double>(i1.x))){
-                    printf("SET 2\n");
-                    res = i2;
-                }
-                else if(std::isnan(static_cast<double>(i2.x))){
-                    printf("SET 1\n");
+
+                printf("SET 0\n");
+                // finds closest Vector
+                float d1 = std::isnan(static_cast<double>(i1.x))?__FLT_MAX__:distance(p->getPos(), i1);
+                float d2 = std::isnan(static_cast<double>(i2.x))?__FLT_MAX__:distance(p->getPos(), i2);
+                float d3 = std::isnan(static_cast<double>(i3.x))?__FLT_MAX__:distance(p->getPos(), i3);
+                
+                if(d1 <= d2 && d1 <= d3){
                     res = i1;
+                    printf("PRIMARY %f:%f:%f\n",d1,d2,d3);
                 }
-                else{
-                    printf("SET 0\n");
-                    // finds closest Vector
-                    int d1 = distance(p->getPos(), i1); //(Vector2){0,0}
-                    int d2 = distance(p->getPos(), i2); //(Vector2){0,0}
-                    
-                    res = d1 < d2 ? i1 : i2;
+                if(d2 <= d1 && d2 <= d3){
+                    res = i2;
+                    printf("SECONDARY %f:%f:%f\n",d1,d2,d3);
                 }
+                if(d3 <= d2 && d3 <= d1){
+                    res = i3;
+                    printf("TERTIARY %f:%f:%f\n",d1,d2,d3);
+                }
+                // res = d1 < d2 ? i1 : i2;
+            
                 printf("OUT %f:%f\n",res.x, res.y);
                 res = {res.x - p->getPos().x, res.y - p->getPos().y};
-
-                p->getHull().push_back(res);
+                
+                bool temp_skipper = false;
+                for(Vector2 v : p->getHull()){
+                    if(res.x == v.x && res.y == v.y){
+                        temp_skipper = true;
+                        break;
+                    }
+                }
+                if(!temp_skipper){
+                    p->getHull().push_back(res);
+                }
+                
             }
 
-
+            p->regenBoundingBox();
         }
     }
-}
-
-Vector3 fixedWorld::getPerpindicularBisector(Vector2 p1, Vector2 p2){
-    // getting midpoint
-    float mx = (p1.x + p2.x) / 2.0;
-    float my = (p1.y + p2.y) / 2.0;
-
-    // slopes
-    float dx = p2.x - p1.x;
-    float dy = p2.y - p1.y;
-    
-    if (dy == 0) { // Vertical line segment
-        return (Vector3){1,0,mx};
-    }
-    if (dx == 0) { // Horizontal line segment
-        return (Vector3){0,1,my};
-    }
-
-    float slope = -dx/dy;
-    
-    return (Vector3){-slope,1,my - slope * mx};
-}
-
-Vector2 fixedWorld::getIntersector(Vector3 p1, Vector3 p2){
-
-    
-    double det = p1.x * p2.y - p2.x * p1.y;
-
-    if (det == 0) {
-        // Lines are parallel
-        printf("FAILED INTERSECT\n");
-        return (Vector2){NAN, NAN};
-    }
-    return (Vector2){
-        (p2.y * p1.z - p1.y * p2.z) / det,
-        (p1.x * p2.z - p2.x * p1.z) / det
-    };
 }
 
 // Gets the grid by map coords
@@ -365,8 +346,41 @@ void fixedWorld::moveStepPlates(){
             for(plate * p : pt->getPlates()){
                 Vector2 v = p->getPos();
                 p->movePlateWrapped(map_x, map_y);
-            }
 
+                for(int x1 = -COL_SEARCH_RAD; x1 <= COL_SEARCH_RAD; x1++){
+                    for(int y1 = -COL_SEARCH_RAD; y1 <= COL_SEARCH_RAD; y1++){
+                        gridCell * pt1 = grid[(grid_x + x + x1) % grid_x][(grid_y + y + y1) % grid_y];
+                        
+
+                        for(plate * p1 : pt1->getPlates()){
+                            // skips if the id of the plate is higher than the other plate or the same, avoids duplicate checks
+                            if(p >= p1){
+                                continue;
+                            }
+                            // p->selfCollisionCheck(p1);
+                            if(p->selfAABBCollisionCheck(p1)){
+                                printf("PRE HULL 1\n");
+                                for(auto v:p->getHull()){
+                                    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
+                                }
+                                
+                                printf("\nPRE HULL 2\n");
+                                for(auto v:p1->getHull()){
+                                    printf("(%f,%f),",v.x + p1->getPos().x,v.y + p1->getPos().y);
+                                }
+                                printf("\n");
+                                p->selfCollisionDeformation(p1);
+                                // printf("Colliding\n");
+                                p->regenBoundingBox();
+
+                                printf("\n\n");
+                            }
+
+                            
+                        }
+                    }
+                }
+            }
         }
     }
 }
@@ -375,8 +389,9 @@ void fixedWorld::moveAllPlates(Vector2 pos){
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
 
-            gridCell * pt = grid[x][y];
 
+            gridCell * pt = grid[x][y];
+            
             for(plate * p : pt->getPlates()){
                 Vector2 v = p->getPos();
                 p->setPos((Vector2){
@@ -420,6 +435,10 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
 
     for(int x = -1; x < grid_x + 1; x++){
         for(int y = -1; y < grid_y + 1; y++){
+            if(x != 1 || y != 1){
+                // printf("Skipping\n");
+                continue;   
+            }
             int rx = (grid_x + x)%grid_x;
             int ry = (grid_y + y)%grid_y;
 
@@ -455,16 +474,34 @@ void fixedWorld::renderCall(int x, int y, int  offset_x, int offset_y){
             EndBlendMode();
 }
 
-void fixedWorld::purge_grids_demo(int e_x, int e_y){
-    
+void fixedWorld::purge_grids_demo(Vector2 exclude [], int length){
+    bool temp;
+    //loop through all the grid cells
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
-            if(x == e_x && y == e_y){
+
+            // bool to check if the grid is in the exclude list
+            temp = false;
+            
+            // loops through exclude list
+            printf("sizeof %d\n",length);
+            for(int i = 0; i < length; i++){
+                if(exclude[i].x == x && exclude[i].y == y){
+                    temp = true;
+                    break;
+                }
+            }
+
+            // continues to next iteration if its in the list
+            if(temp == true){
                 continue;
             }
+
+            // get the grid cell
             gridCell * pt = grid[x][y];
-            printf("D %d\n",pt->getPlates().size());
+            printf("D%d:%d %d\n",x,y,pt->getPlates().size());
             
+            // delete the plates in the cell
             for(int p = 0; p < pt->getPlates().size(); p++){
                 printf("deleting\n");
                 pt->deletePlate(p);

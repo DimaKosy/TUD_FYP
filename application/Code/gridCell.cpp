@@ -2,6 +2,8 @@
 #define GRIDCELL_C
 #include "TED.hpp"
 
+#define GRID_B 0.185
+
 class gridCell{
 private:
     std::list<plate *> plates;
@@ -79,7 +81,7 @@ void gridCell::addNewPlate(Vector2 platePos, Image m, Vector2 direction, float s
     this->plates.push_back( 
     new plate(
         m,
-        (Vector2){platePos.x + pos.x, platePos.y + pos.y},
+        (Vector2){(platePos.x * (1 - (GRID_B * 2))) + pos.x + (size_x * GRID_B), (platePos.y * (1 - (GRID_B * 2))) + pos.y + (size_y * GRID_B)},
         direction,
         speed
     ));
