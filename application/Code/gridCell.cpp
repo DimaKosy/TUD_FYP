@@ -27,6 +27,9 @@ public:
     const std::list<plate *> getPlates();
     void deletePlate(int i);
     void popPlate(plate * p);
+
+    // debug
+    void DebugRender();
 };
 
 // gridCell::gridCell(){
@@ -105,6 +108,8 @@ gridCell::~gridCell(){
     printf("Closing grid\n");
 }
 
-
+void gridCell::DebugRender(){
+    DrawRectangleLines((int)pos.x,(int)pos.y,size_x, size_y, RED);
+}
 
 #endif

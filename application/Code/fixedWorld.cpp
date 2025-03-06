@@ -49,6 +49,7 @@ public:
 
     //demo functions
     void purge_grids_demo(Vector2 exclude[], int length);
+    void debugPlateVertexs();
 };
 
 fixedWorld::fixedWorld(int map_x, int map_y, int grid_x, int grid_y, int seed){
@@ -121,115 +122,115 @@ void fixedWorld::init_plates(){
     printf("Starting pixel assign\n");
 
     // loops through every pixel
-    for(int x = 0; x < this->map_x; x++){
-        for(int y = 0; y < this->map_y; y++){
-            // if(y != 0){
-            //     printf("FAILED");
-            //     x = this->map_x;
+    // for(int x = 0; x < this->map_x; x++){
+    //     for(int y = 0; y < this->map_y; y++){
+    //         // if(y != 0){
+    //         //     printf("FAILED");
+    //         //     x = this->map_x;
                 
-            //     break;;
-            // }
-            // gets the index of the grid cell in which the pixel is in
-            Vector2 curGrid = getGridIndex2D(x,y);
+    //         //     break;;
+    //         // }
+    //         // gets the index of the grid cell in which the pixel is in
+    //         Vector2 curGrid = getGridIndex2D(x,y);
 
             
-            //gets the distance between the pixel and the plate point
-            int CI_x = curGrid.x, CI_y = curGrid.y;
-            grid_temp = this->grid[CI_x][CI_y];
+    //         //gets the distance between the pixel and the plate point
+    //         int CI_x = curGrid.x, CI_y = curGrid.y;
+    //         grid_temp = this->grid[CI_x][CI_y];
 
 
-            if(grid_temp == NULL){
-                printf("FAILED");
-            }
+    //         if(grid_temp == NULL){
+    //             printf("FAILED");
+    //         }
             
             
-            if (!grid_temp->getPlates().empty()) {
-                p = grid_temp->getPlates().front();
-            }
-            else{
-                printf("FAILED");
-            }
+    //         if (!grid_temp->getPlates().empty()) {
+    //             p = grid_temp->getPlates().front();
+    //         }
+    //         else{
+    //             printf("FAILED");
+    //         }
 
 
-            // float closestDistance = distance((Vector2){x,y},p->getPlateCenter());
-            float closestDistance = distance((Vector2){x,y},p->getPos());
+    //         // float closestDistance = distance((Vector2){x,y},p->getPlateCenter());
+    //         float closestDistance = distance((Vector2){x,y},p->getPos());
 
-            // printf("DIST %f\n",closestDistance);
+    //         // printf("DIST %f\n",closestDistance);
 
-            // checks the neighbouring grid cells
-            for(int lx = -1; lx <= 1; lx++){
-                for(int ly = -1; ly <= 1; ly++){
-                    // skips its own cell
-                    if(lx == 0 && ly == 0){
-                        continue;
-                    }
+    //         // checks the neighbouring grid cells
+    //         for(int lx = -1; lx <= 1; lx++){
+    //             for(int ly = -1; ly <= 1; ly++){
+    //                 // skips its own cell
+    //                 if(lx == 0 && ly == 0){
+    //                     continue;
+    //                 }
 
-                    // getting offset grid
-                    int off_x = (grid_size_x  + (int)curGrid.x + lx) % grid_x;
-                    int off_y = (grid_size_y  + (int)curGrid.y + ly) % grid_y;
+    //                 // getting offset grid
+    //                 int off_x = (grid_size_x  + (int)curGrid.x + lx) % grid_x;
+    //                 int off_y = (grid_size_y  + (int)curGrid.y + ly) % grid_y;
                     
                     
-                    // getting the current grid and plate
-                    grid_temp = this->grid[off_x][off_y];
-                    // grid_temp = this->grid[CI_x][CI_y];
+    //                 // getting the current grid and plate
+    //                 grid_temp = this->grid[off_x][off_y];
+    //                 // grid_temp = this->grid[CI_x][CI_y];
 
-                    if (!grid_temp->getPlates().empty()) {
-                        p = grid_temp->getPlates().front();
-                    }
-                    else{
-                        printf("FAILED");
-                    }
+    //                 if (!grid_temp->getPlates().empty()) {
+    //                     p = grid_temp->getPlates().front();
+    //                 }
+    //                 else{
+    //                     printf("FAILED");
+    //                 }
 
-                    // gets closest xy point for wrapped world
+    //                 // gets closest xy point for wrapped world
 
-                    int x2, y2;
-                    x2 = p->getPos().x;
-                    y2 = p->getPos().y;
+    //                 int x2, y2;
+    //                 x2 = p->getPos().x;
+    //                 y2 = p->getPos().y;
 
-                    float dx = abs(x - x2);
-                    if (dx > map_x/2){
-                        dx = map_x - dx;
-                    }
+    //                 float dx = abs(x - x2);
+    //                 if (dx > map_x/2){
+    //                     dx = map_x - dx;
+    //                 }
 
-                    float dy = abs(y - y2);
-                    if (dy > map_y/2){
-                        dy = map_y - dy;
-                    }
+    //                 float dy = abs(y - y2);
+    //                 if (dy > map_y/2){
+    //                     dy = map_y - dy;
+    //                 }
 
-                    // calculates the distance between the pixel and the plate center
-                    float dist = sqrtf(dx*dx + dy*dy);
-
-
-
-                    // printf("\n\nPIX: %d:%d\n",x,y);
-                    // printf("Off Grids: [%d:%d][%d:%d]\n",curGrid.x,curGrid.y,off_x, off_y);
-                    // printf("DIST %f - %f\n",closestDistance, dist);
+    //                 // calculates the distance between the pixel and the plate center
+    //                 float dist = sqrtf(dx*dx + dy*dy);
 
 
-                    // checks if the distance is closer than the current closest distance
-                    if(dist < closestDistance){
 
-                        // sets the new closet distance
-                        closestDistance = dist;
-                        CI_x = off_x;
-                        CI_y = off_y;
-                    }
+    //                 // printf("\n\nPIX: %d:%d\n",x,y);
+    //                 // printf("Off Grids: [%d:%d][%d:%d]\n",curGrid.x,curGrid.y,off_x, off_y);
+    //                 // printf("DIST %f - %f\n",closestDistance, dist);
+
+
+    //                 // checks if the distance is closer than the current closest distance
+    //                 if(dist < closestDistance){
+
+    //                     // sets the new closet distance
+    //                     closestDistance = dist;
+    //                     CI_x = off_x;
+    //                     CI_y = off_y;
+    //                 }
                     
-                }
-            }
+    //             }
+    //         }
             
-            // sets the pixel to be in the closet plate and changes the pixel color to match the plates
-            p = this->grid[CI_x][CI_y]->getPlates().front();
+    //         // sets the pixel to be in the closet plate and changes the pixel color to match the plates
+    //         p = this->grid[CI_x][CI_y]->getPlates().front();
 
-            // printf("%d,%d\n",CI_x,CI_y);
+    //         // printf("%d,%d\n",CI_x,CI_y);
 
-            // Color c = p->color;
-            // ImageDrawPixel(&p->localMap, x, y, c);
+    //         // Color c = p->color;
+    //         // ImageDrawPixel(&p->localMap, x, y, c);
 
-            p->setPixel(x,y);
+    //         p->setPixel(x,y);
 
-        }
-    }
+    //     }
+    // }
     printf("Finished pixel assign\n");
 
     initPlateHull();
@@ -337,7 +338,6 @@ Vector2 fixedWorld::getGridIndex2D(int mx, int my){
 }
 
 void fixedWorld::moveStepPlates(){
-    
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
 
@@ -346,34 +346,50 @@ void fixedWorld::moveStepPlates(){
             for(plate * p : pt->getPlates()){
                 Vector2 v = p->getPos();
                 p->movePlateWrapped(map_x, map_y);
+            }
+        }
+    }
+
+    // debugPlateVertexs();
+    
+    for(int x = 0; x < grid_x; x++){
+        for(int y = 0; y < grid_y; y++){
+
+            gridCell * pt = grid[x][y];
+
+            for(plate * p : pt->getPlates()){
+                Vector2 v = p->getPos();
+                // p->movePlateWrapped(map_x, map_y);
 
                 for(int x1 = -COL_SEARCH_RAD; x1 <= COL_SEARCH_RAD; x1++){
                     for(int y1 = -COL_SEARCH_RAD; y1 <= COL_SEARCH_RAD; y1++){
                         gridCell * pt1 = grid[(grid_x + x + x1) % grid_x][(grid_y + y + y1) % grid_y];
-                        
+
 
                         for(plate * p1 : pt1->getPlates()){
                             // skips if the id of the plate is higher than the other plate or the same, avoids duplicate checks
+                           
                             if(p >= p1){
                                 continue;
                             }
                             // p->selfCollisionCheck(p1);
                             if(p->selfAABBCollisionCheck(p1)){
-                                printf("PRE HULL 1\n");
-                                for(auto v:p->getHull()){
-                                    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
-                                }
+                                // printf("\n\n");
+                                // printf("PRE HULL 1\n");
+                                // for(auto v:p->getHull()){
+                                //     printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
+                                // }
                                 
-                                printf("\nPRE HULL 2\n");
-                                for(auto v:p1->getHull()){
-                                    printf("(%f,%f),",v.x + p1->getPos().x,v.y + p1->getPos().y);
-                                }
-                                printf("\n");
+                                // printf("\nPRE HULL 2\n");
+                                // for(auto v:p1->getHull()){
+                                //     printf("(%f,%f),",v.x + p1->getPos().x,v.y + p1->getPos().y);
+                                // }
+                                // printf("\n");
                                 p->selfCollisionDeformation(p1);
                                 // printf("Colliding\n");
                                 p->regenBoundingBox();
 
-                                printf("\n\n");
+                                
                             }
 
                             
@@ -437,7 +453,7 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
         for(int y = -1; y < grid_y + 1; y++){
             if(x != 1 || y != 1){
                 // printf("Skipping\n");
-                continue;   
+                // continue;   
             }
             int rx = (grid_x + x)%grid_x;
             int ry = (grid_y + y)%grid_y;
@@ -453,7 +469,15 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
 // goes through every grid cell and every plate thats in that cell and renders it
 void fixedWorld::render(){      
 
+    for(int x = 0; x < this->grid_x; x++){
+        for(int y = 0; y < this->grid_y; y++){
+            grid[x][y]->DebugRender();
+        }        
+    }
+    
     accessWrappedEdge(renderCall);
+
+    
 
 }
 
@@ -472,6 +496,24 @@ void fixedWorld::renderCall(int x, int y, int  offset_x, int offset_y){
                 
             }
             EndBlendMode();
+}
+
+void fixedWorld::debugPlateVertexs(){
+    for(int x = 0; x < grid_x; x++){
+        for(int y = 0; y < grid_y; y++){
+
+            gridCell * pt = grid[x][y];
+
+            for(plate * p : pt->getPlates()){
+                for(auto v : p->getHull()){
+                    printf("(%f,-%f),",v.x + p->getPos().x,v.y +p->getPos().y);
+                }
+
+                printf("\b \n");
+            }
+        }
+    }
+
 }
 
 void fixedWorld::purge_grids_demo(Vector2 exclude [], int length){

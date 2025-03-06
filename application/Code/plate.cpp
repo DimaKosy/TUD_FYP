@@ -1,6 +1,9 @@
 #ifndef PLATE_C
 #define PLATE_C
 #include "TED.hpp"
+#define MIN_ANG 3.0
+#define MAX_ANG 173.0
+#define ERROR_MARG 0.005
 
 class plate{
 private:
@@ -13,7 +16,8 @@ private:
     Texture2D mapTexture;
 
     void internalVertTest(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr);
-    
+    void VertAngleFilter(plate * primary, double min_angle, double max_angle);
+
 public:
     Image localMap;
     Color color;
@@ -262,10 +266,10 @@ bool plate::selfCollisionDeformation(plate * Collision){
             // );
 
             if( //checks if the intersection is within the line segment
-                intersection.x >= std::min(s_v1.x, s_v2.x) && intersection.x <= std::max(s_v1.x, s_v2.x) &&
-                intersection.y >= std::min(s_v1.y, s_v2.y) && intersection.y <= std::max(s_v1.y, s_v2.y) &&
-                intersection.x >= std::min(o_v1.x, o_v2.x) && intersection.x <= std::max(o_v1.x, o_v2.x) &&
-                intersection.y >= std::min(o_v1.y, o_v2.y) && intersection.y <= std::max(o_v1.y, o_v2.y)
+                intersection.x >= std::min(s_v1.x, s_v2.x) - ERROR_MARG && intersection.x <= std::max(s_v1.x, s_v2.x) + ERROR_MARG &&
+                intersection.y >= std::min(s_v1.y, s_v2.y) - ERROR_MARG && intersection.y <= std::max(s_v1.y, s_v2.y) + ERROR_MARG &&
+                intersection.x >= std::min(o_v1.x, o_v2.x) - ERROR_MARG && intersection.x <= std::max(o_v1.x, o_v2.x) + ERROR_MARG &&
+                intersection.y >= std::min(o_v1.y, o_v2.y) - ERROR_MARG && intersection.y <= std::max(o_v1.y, o_v2.y) + ERROR_MARG
             ){
                 //adds it to a queue to be added
 
@@ -284,7 +288,7 @@ bool plate::selfCollisionDeformation(plate * Collision){
                 otherPrePointPtr.push_back(v3);
                 otherNextPointPtr.push_back(v4);
 
-                // printf("Inserted\n");
+                // printf("Inserted\n\n");
                 
                 
                 continue;
@@ -301,10 +305,13 @@ bool plate::selfCollisionDeformation(plate * Collision){
         Collision->hull.insert(otherNextPointPtr[i],otherNewPoint[i]);
     }
 
+    // // check if either of the parent vertexs are inside the other shape
     internalVertTest(this, Collision, &otherPrePointPtr, &otherNextPointPtr);
     internalVertTest(Collision, this, &selfPrePointPtr, &selfNextPointPtr);
 
-    // check if either of the parent vertexs are inside the other shape
+    VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
+    VertAngleFilter(Collision, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
+
     // (b.x-a.x)(c.y-a.y)-(b.y-a.y)(c.x-a.x) cross product
     // remove if they are inside
     // 
@@ -439,32 +446,32 @@ void plate::internalVertTest(plate * primary, plate * secondary, std::vector<std
     }
 
 
-    for (auto ptr : *PrePointPtr) {
+    for(auto ptr : *PrePointPtr){
         for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
             if (h->x == ptr->x && h->y == ptr->y) {  
-                printf("erasing pre %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+                // printf("erasing pre %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
                 h = secondary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
             }
         }
     }
-    for (auto ptr : *nextPointPtr) {
+    for(auto ptr : *nextPointPtr){
         for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
             if (h->x == ptr->x && h->y == ptr->y) {  
-                printf("erasing next %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+                // printf("erasing next %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
                 h = secondary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
             }
         }
     }
-    printf("\n");
+    // printf("\n");
 
-    for(auto v:secondary->hull){
-        printf("(%f,%f),",v.x + secondary->getPos().x,v.y + secondary->getPos().y);
-    }
-    printf("\n");
+    // for(auto v:secondary->hull){
+    //     printf("(%f,%f),",v.x + secondary->getPos().x,v.y + secondary->getPos().y);
+    // }
+    // printf("\n");
 
     // for(auto ptr: *nextPointPtr){
     //     auto purge_node = std::find(secondary->hull.begin(), secondary->hull.end(), ptr);
@@ -473,6 +480,39 @@ void plate::internalVertTest(plate * primary, plate * secondary, std::vector<std
     //         secondary->hull.erase(purge_node);
     //     }
     // }
+}
+
+void plate::VertAngleFilter(plate * primary, double min_angle, double max_angle){
+    std::vector<std::list<Vector2>::iterator> removeList;
+
+    for(auto vc = primary->hull.begin(); vc != primary->hull.end(); ++vc){
+        auto vp = (vc == primary->hull.begin()) ? std::prev(primary->hull.end()) : std::prev(vc); // previous ptr
+        auto vn = std::next(vc); //next
+        
+        // wrap
+        if(vn == primary->hull.end()){
+            vn == primary->hull.begin();
+        }
+
+        float angle = angleBetween(*vp, *vc, *vn);
+
+        if(angle < min_angle || angle > max_angle){
+            removeList.push_back(vc);
+        }
+        
+        // printf("Angle %f\n",angle);
+    }
+
+    for(auto ptr : removeList){
+        for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
+            if (h->x == ptr->x && h->y == ptr->y) {  
+                // printf("erasing pre %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+                h = primary->hull.erase(h);  // Use returned iterator
+            } else {
+                ++h;  // Only increment if not erased
+            }
+        }
+    }
 }
 
 void plate::movePlate(){
@@ -518,11 +558,14 @@ void plate::render(int pos_x, int pos_y){
 
 
     int i = 0;
+    Vector2 vp = this->hull.back();
     for(Vector2 v : this->hull){
         i++;
         // printf("%d,%d\n",v.x,v.y);
+        ImageDrawLine(&this->localMap, vp.x + this->localMap.width/2,vp.y + this->localMap.height/2,v.x + this->localMap.width/2,v.y + this->localMap.height/2,PINK);
         ImageDrawCircle(&this->localMap, v.x + this->localMap.width/2,v.y + this->localMap.height/2,5,GREEN);
         ImageDrawText(&this->localMap,std::to_string(i).c_str(), v.x + 10 + this->localMap.width/2,v.y + 10 + this->localMap.height/2,15,WHITE);
+        vp = v;
     }
 
     int lx[9] = {-1, 0, 1, 1, 1, 0,-1,-1,-1};

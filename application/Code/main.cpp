@@ -1,12 +1,13 @@
 #include "TED.hpp"
 
-#define P_N 4
+#define P_N 6
+#define CAM_SPEED 500
 
 int main(int argc, char ** arg){
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth  = 128*4;
-    const int screenHeight = 128*4;
+    const int screenWidth  = 128*6;
+    const int screenHeight = 128*6;
 
     SetTraceLogLevel(LOG_ERROR); 
     InitWindow(screenWidth, screenHeight, "TED");
@@ -18,11 +19,13 @@ int main(int argc, char ** arg){
 
 
     
-    // Vector2 exclude2[] = {
-    //     {1,1},
-    //     {2,1}
-    // };
-    // World.purge_grids_demo(exclude2, 2);   
+    Vector2 exclude2[] = {
+        // {0,3},
+        {0,2},
+        {1,3},
+        // {1,2}
+    };
+    World.purge_grids_demo(exclude2, 4);   
     
     
 
@@ -38,21 +41,22 @@ int main(int argc, char ** arg){
         //----------------------------------------------------------------------------------
 
         if (IsKeyDown(KEY_UP)){
-            World.moveAllPlates((Vector2){0,-60 * GetFrameTime()});
+            World.moveAllPlates((Vector2){0,-CAM_SPEED * GetFrameTime()});
         }
         if (IsKeyDown(KEY_DOWN)){
-            World.moveAllPlates((Vector2){0,60 * GetFrameTime()});
+            World.moveAllPlates((Vector2){0,CAM_SPEED * GetFrameTime()});
         }
 
         if (IsKeyDown(KEY_RIGHT)){
-            World.moveAllPlates((Vector2){60 * GetFrameTime(),0});
+            World.moveAllPlates((Vector2){CAM_SPEED * GetFrameTime(),0});
         }
         if (IsKeyDown(KEY_LEFT)){
-            World.moveAllPlates((Vector2){-60 * GetFrameTime(),0});
+            World.moveAllPlates((Vector2){-CAM_SPEED * GetFrameTime(),0});
         }
 
         if (IsKeyPressed(KEY_SPACE)){
             // World.translateWorld(-30,0);
+            // World.debugPlateVertexs();
             World.moveStepPlates();
         }
 
@@ -60,8 +64,9 @@ int main(int argc, char ** arg){
             Vector2 exclude[] = {
                 {1,1}
             };
-            // World.moveStepPlates();
-            World.purge_grids_demo(exclude,1);
+            // World.debugPlateVertexs();
+            World.moveStepPlates();
+            // World.purge_grids_demo(exclude,1);
         }
 
         
