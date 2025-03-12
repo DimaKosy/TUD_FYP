@@ -1,6 +1,6 @@
 #include "TED.hpp"
 
-#define P_N 12
+#define P_N 4
 #define CAM_SPEED 500
 
 
@@ -8,8 +8,8 @@
 int main(int argc, char ** arg){
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth  = 128*6;
-    const int screenHeight = 128*6;
+    const int screenWidth  = 128*8;
+    const int screenHeight = 128*8;
     bool render_bool = true;
 
     SetTraceLogLevel(LOG_ERROR); 
@@ -24,11 +24,11 @@ int main(int argc, char ** arg){
     
     Vector2 exclude2[] = {
         // {0,3},
-        {0,2},
+        {0,1},
         {0,0},
         // {1,2}
     };
-    // World.purge_grids_demo(exclude2, 2);   
+    World.purge_grids_demo(exclude2, 2);   
     
     
 

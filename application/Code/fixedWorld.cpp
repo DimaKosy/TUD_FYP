@@ -4,7 +4,7 @@
 
 #define MAX_SPEED 2
 #define PH_COUNT 8
-#define COL_SEARCH_RAD 1
+#define COL_SEARCH_RAD 2
 
 class fixedWorld{
 private:
@@ -112,125 +112,13 @@ void fixedWorld::init_plates(){
                         (rand()%(grid_size_x)),
                         (rand()%(grid_size_y))
                     },
-                    GenImageColor(map_x, map_y, BLACK),
+                    GenImageColor(grid_size_x*3, grid_size_y*3, BLACK),
                     Vector2Normalize((Vector2){rand()%100, rand()%100}),
                     3 + (rand()%MAX_SPEED)
                 );
         }
     }
 
-    printf("Starting pixel assign\n");
-
-    // loops through every pixel
-    // for(int x = 0; x < this->map_x; x++){
-    //     for(int y = 0; y < this->map_y; y++){
-    //         // if(y != 0){
-    //         //     printf("FAILED");
-    //         //     x = this->map_x;
-                
-    //         //     break;;
-    //         // }
-    //         // gets the index of the grid cell in which the pixel is in
-    //         Vector2 curGrid = getGridIndex2D(x,y);
-
-            
-    //         //gets the distance between the pixel and the plate point
-    //         int CI_x = curGrid.x, CI_y = curGrid.y;
-    //         grid_temp = this->grid[CI_x][CI_y];
-
-
-    //         if(grid_temp == NULL){
-    //             printf("FAILED");
-    //         }
-            
-            
-    //         if (!grid_temp->getPlates().empty()) {
-    //             p = grid_temp->getPlates().front();
-    //         }
-    //         else{
-    //             printf("FAILED");
-    //         }
-
-
-    //         // float closestDistance = distance((Vector2){x,y},p->getPlateCenter());
-    //         float closestDistance = distance((Vector2){x,y},p->getPos());
-
-    //         // printf("DIST %f\n",closestDistance);
-
-    //         // checks the neighbouring grid cells
-    //         for(int lx = -1; lx <= 1; lx++){
-    //             for(int ly = -1; ly <= 1; ly++){
-    //                 // skips its own cell
-    //                 if(lx == 0 && ly == 0){
-    //                     continue;
-    //                 }
-
-    //                 // getting offset grid
-    //                 int off_x = (grid_size_x  + (int)curGrid.x + lx) % grid_x;
-    //                 int off_y = (grid_size_y  + (int)curGrid.y + ly) % grid_y;
-                    
-                    
-    //                 // getting the current grid and plate
-    //                 grid_temp = this->grid[off_x][off_y];
-    //                 // grid_temp = this->grid[CI_x][CI_y];
-
-    //                 if (!grid_temp->getPlates().empty()) {
-    //                     p = grid_temp->getPlates().front();
-    //                 }
-    //                 else{
-    //                     printf("FAILED");
-    //                 }
-
-    //                 // gets closest xy point for wrapped world
-
-    //                 int x2, y2;
-    //                 x2 = p->getPos().x;
-    //                 y2 = p->getPos().y;
-
-    //                 float dx = abs(x - x2);
-    //                 if (dx > map_x/2){
-    //                     dx = map_x - dx;
-    //                 }
-
-    //                 float dy = abs(y - y2);
-    //                 if (dy > map_y/2){
-    //                     dy = map_y - dy;
-    //                 }
-
-    //                 // calculates the distance between the pixel and the plate center
-    //                 float dist = sqrtf(dx*dx + dy*dy);
-
-
-
-    //                 // printf("\n\nPIX: %d:%d\n",x,y);
-    //                 // printf("Off Grids: [%d:%d][%d:%d]\n",curGrid.x,curGrid.y,off_x, off_y);
-    //                 // printf("DIST %f - %f\n",closestDistance, dist);
-
-
-    //                 // checks if the distance is closer than the current closest distance
-    //                 if(dist < closestDistance){
-
-    //                     // sets the new closet distance
-    //                     closestDistance = dist;
-    //                     CI_x = off_x;
-    //                     CI_y = off_y;
-    //                 }
-                    
-    //             }
-    //         }
-            
-    //         // sets the pixel to be in the closet plate and changes the pixel color to match the plates
-    //         p = this->grid[CI_x][CI_y]->getPlates().front();
-
-    //         // printf("%d,%d\n",CI_x,CI_y);
-
-    //         // Color c = p->color;
-    //         // ImageDrawPixel(&p->localMap, x, y, c);
-
-    //         p->setPixel(x,y);
-
-    //     }
-    // }
     printf("Finished pixel assign\n");
 
     initPlateHull();
@@ -373,7 +261,10 @@ void fixedWorld::moveStepPlates(){
                 for(int x1 = -COL_SEARCH_RAD; x1 <= COL_SEARCH_RAD; x1++){
                     for(int y1 = -COL_SEARCH_RAD; y1 <= COL_SEARCH_RAD; y1++){
                         gridCell * pt1 = grid[(grid_x + x + x1) % grid_x][(grid_y + y + y1) % grid_y];
+                        Vector2 offset = {0,0};
 
+                        offset.x = (x + x1 < 0) ? (x + x1)*map_x : x + x1 >= grid_x ? (x + x1 - grid_x) * map_x : 0;
+                        offset.y = (y + y1 < 0) ? (y + y1)*map_y : y + y1 >= grid_y ? (y + y1 - grid_y) * map_y : 0;
 
                         for(plate * p1 : pt1->getPlates()){
                             // skips if the id of the plate is higher than the other plate or the same, avoids duplicate checks
@@ -381,8 +272,10 @@ void fixedWorld::moveStepPlates(){
                             if(p >= p1){
                                 continue;
                             }
+
+                            
                             // p->selfCollisionCheck(p1);
-                            if(p->selfAABBCollisionCheck(p1)){
+                            if(p->selfAABBCollisionCheck(p1, offset)){
                                 // printf("\n\n");
                                 // printf("PRE HULL 1\n");
                                 // for(auto v:p->getHull()){
@@ -396,7 +289,7 @@ void fixedWorld::moveStepPlates(){
                                 // printf("\n");
                                 p->DebugRect = RED;
                                 p1->DebugRect = RED;
-                                p->selfCollisionDeformation(p1);
+                                p->selfCollisionDeformation(p1, offset);
                                 // printf("Colliding\n");
                                 p->regenBoundingBox();
                                 p1->regenBoundingBox();

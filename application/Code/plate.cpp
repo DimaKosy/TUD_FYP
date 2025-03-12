@@ -1,8 +1,8 @@
 #ifndef PLATE_C
 #define PLATE_C
 #include "TED.hpp"
-#define MIN_ANG 3.0
-#define MAX_ANG 177.0
+#define MIN_ANG 2.0
+#define MAX_ANG 178.0
 #define ERROR_MARG 0.005
 
 class plate{
@@ -15,7 +15,7 @@ private:
     float speed;
     Texture2D mapTexture;
 
-    void internalVertTest(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr);
+    void internalVertTest(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr, Vector2 Offset);
     void VertAngleFilter(plate * primary, double min_angle, double max_angle);
 
 public:
@@ -33,8 +33,8 @@ public:
 
     // collision checkers
     bool selfSATCollisionCheck(plate * Collision);
-    bool selfAABBCollisionCheck(plate * Collision);
-    bool selfCollisionDeformation(plate * Collision);
+    bool selfAABBCollisionCheck(plate * Collision, Vector2 Offset);
+    bool selfCollisionDeformation(plate * Collision, Vector2 Offset);
 
     void movePlate();
     void movePlateWrapped(int wrap_x, int wrap_y);
@@ -205,18 +205,18 @@ bool plate::selfSATCollisionCheck(plate * Collision){
 }
 
 // Axis aligned collision check
-bool plate::selfAABBCollisionCheck(plate * Collision){
+bool plate::selfAABBCollisionCheck(plate * Collision, Vector2 Offset){
     
     // minimum of other shape is outside the checking shape // maximum of other shape is outside the checking shape // checking shape minimum is outside the other shape
-    if( this->boundingBox.width + this->getPos().x < Collision->boundingBox.x + Collision->getPos().x || 
-        Collision->boundingBox.width + Collision->getPos().x < this->boundingBox.x + this->getPos().x){
+    if( this->boundingBox.width + this->getPos().x < Collision->boundingBox.x + Collision->getPos().x + Offset.x|| 
+        Collision->boundingBox.width + Collision->getPos().x + Offset.x< this->boundingBox.x + this->getPos().x){
         // printf("NON X\n");
         return false; // no collision
     }
     
     // minimum of other shape is outside the checking shape // maximum of other shape is outside the checking shape // checking shape minimum is outside the other shape
-    if( this->boundingBox.height + this->getPos().y < Collision->boundingBox.y  + Collision->getPos().y || 
-        Collision->boundingBox.height + Collision->getPos().y  < this->boundingBox.y + this->getPos().y){
+    if( this->boundingBox.height + this->getPos().y < Collision->boundingBox.y  + Collision->getPos().y + Offset.y || 
+        Collision->boundingBox.height + Collision->getPos().y + Offset.y < this->boundingBox.y + this->getPos().y){
         // printf("NON Y\n");
         return false; // no collision
     }
@@ -226,7 +226,7 @@ bool plate::selfAABBCollisionCheck(plate * Collision){
 }
 
 // deformation of plates
-bool plate::selfCollisionDeformation(plate * Collision){
+bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     Vector2 s_v1, s_v2, o_v1, o_v2;
     Vector3 s_lv, o_lv;
 
@@ -263,8 +263,8 @@ bool plate::selfCollisionDeformation(plate * Collision){
             }
 
 
-            o_v1 = (Vector2){v3->x + Collision->getPos().x, v3->y + Collision->getPos().y};
-            o_v2 = (Vector2){v4->x + Collision->getPos().x, v4->y + Collision->getPos().y};
+            o_v1 = (Vector2){v3->x + Collision->getPos().x + + Offset.x, v3->y + Collision->getPos().y + Offset.y};
+            o_v2 = (Vector2){v4->x + Collision->getPos().x + + Offset.x, v4->y + Collision->getPos().y + Offset.y};
 
             o_lv = getLineEquation(o_v1,o_v2);
 
@@ -306,8 +306,8 @@ bool plate::selfCollisionDeformation(plate * Collision){
                 selfNextPointPtr.push_back(v2);
 
                 otherNewPoint.push_back((Vector2){
-                    intersection.x - Collision->getPos().x,
-                    intersection.y - Collision->getPos().y
+                    intersection.x - Collision->getPos().x - Offset.x,
+                    intersection.y - Collision->getPos().y - Offset.y
                 });
                 
                 otherPrePointPtr.push_back(v3);
@@ -331,71 +331,11 @@ bool plate::selfCollisionDeformation(plate * Collision){
     }
 
     // // check if either of the parent vertexs are inside the other shape
-    internalVertTest(this, Collision, &otherPrePointPtr, &otherNextPointPtr);
-    internalVertTest(Collision, this, &selfPrePointPtr, &selfNextPointPtr);
+    internalVertTest(this, Collision, &otherPrePointPtr, &otherNextPointPtr, Offset);
+    internalVertTest(Collision, this, &selfPrePointPtr, &selfNextPointPtr, (Vector2){-Offset.x, -Offset.y});
 
     VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     VertAngleFilter(Collision, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
-
-    // (b.x-a.x)(c.y-a.y)-(b.y-a.y)(c.x-a.x) cross product
-    // remove if they are inside
-    // 
-    // for(auto v1 = this->hull.begin(); v1 != this->hull.end(); ++v1){
-    //     std::vector<std::list<Vector2>::iterator> keep; // vector for vertices that are to be kept
-    // 
-    //     std::list<Vector2>::iterator v2 = v1;
-    //     ++v2;
-    //     if(v2 == this->hull.end()){    // Wrap around to the first element
-    //         v2 = this->hull.begin(); 
-    //     }
-    // 
-    //     s_v1 = (Vector2){v1->x + this->getPos().x, v1->y + this->getPos().y};
-    //     s_v2 = (Vector2){v2->x + this->getPos().x, v2->y + this->getPos().y};
-    // 
-    //     for(auto v3 : otherPrePointPtr){
-    //         Vector2 s_v3 = (Vector2){v3->x + Collision->getPos().x, v3->y + Collision->getPos().y};
-    // 
-    //         float crossvalue = crossproduct(s_v1,s_v2,s_v3);
-    //         if(crossvalue < 0){
-    //             keep.push_back(v3);
-    //         }
-    //     }
-    //     printf("next vert pair\n");
-    // }
-    // printf("\n");
-    // for(auto v1 = Collision->hull.begin(); v1 != Collision->hull.end(); ++v1){
-    //     std::vector<std::list<Vector2>::iterator> keep; // vector for vertices that are to be kept
-    // 
-    //     std::list<Vector2>::iterator v2 = v1;
-    //     ++v2;
-    //     if(v2 == Collision->hull.end()){    // Wrap around to the first element
-    //         v2 = Collision->hull.begin(); 
-    //     }
-    // 
-    //     s_v1 = (Vector2){v1->x + Collision->getPos().x, v1->y + Collision->getPos().y};
-    //     s_v2 = (Vector2){v2->x + Collision->getPos().x, v2->y + Collision->getPos().y};
-    // 
-    //     // printf("(%f,%f),", s_v1.x, s_v1.y);
-    // 
-    //     for(auto v3 : selfPrePointPtr){
-    //         Vector2 s_v3 = (Vector2){v3->x + this->getPos().x, v3->y + this->getPos().y};
-    // 
-    //         float crossvalue = crossproduct(s_v1,s_v2,s_v3);
-    // 
-    //         if(crossvalue < 0){
-    //             keep.push_back(v3);
-    //         }
-    //     }
-    // 
-    //     // remove vertices that are being kept
-    //     for(auto k: keep){
-    //         auto purge_node = std::find(selfPrePointPtr.begin(), selfPrePointPtr.end(), k);
-    //         if (purge_node != selfPrePointPtr.end()) {
-    //             printf("removed\n");
-    //             selfPrePointPtr.erase(purge_node);
-    //         }
-    //     }
-    // }
     
     // safety clear
     selfNewPoint.clear();
@@ -407,7 +347,7 @@ bool plate::selfCollisionDeformation(plate * Collision){
 
 }
 
-void plate::internalVertTest(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr){
+void plate::internalVertTest(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr, Vector2 Offset){
     for(auto v1 = primary->hull.begin(); v1 != primary->hull.end(); ++v1){
         std::vector<std::list<Vector2>::iterator> keep_pre; // vector for vertices that are to be kept
         std::vector<std::list<Vector2>::iterator> keep_next; // vector for vertices that are to be kept
@@ -424,7 +364,7 @@ void plate::internalVertTest(plate * primary, plate * secondary, std::vector<std
         // printf("(%f,%f),", s_v1.x, s_v1.y);
 
         for(auto v3 : *PrePointPtr){
-            Vector2 s_v3 = (Vector2){v3->x + secondary->getPos().x, v3->y + secondary->getPos().y};
+            Vector2 s_v3 = (Vector2){v3->x + secondary->getPos().x + Offset.x, v3->y + secondary->getPos().y + Offset.y};
 
             float crossvalue = crossproduct(s_v1,s_v2,s_v3);
 
@@ -443,7 +383,7 @@ void plate::internalVertTest(plate * primary, plate * secondary, std::vector<std
         }
 
         for(auto v3 : *nextPointPtr){
-            Vector2 s_v3 = (Vector2){v3->x + secondary->getPos().x, v3->y + secondary->getPos().y};
+            Vector2 s_v3 = (Vector2){v3->x + secondary->getPos().x + Offset.x, v3->y + secondary->getPos().y + Offset.y};
 
             float crossvalue = crossproduct(s_v1,s_v2,s_v3);
 
