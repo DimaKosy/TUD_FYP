@@ -1,6 +1,6 @@
 #include "TED.hpp"
 
-#define P_N 6
+#define P_N 12
 #define CAM_SPEED 500
 
 
@@ -28,7 +28,7 @@ int main(int argc, char ** arg){
         {0,0},
         // {1,2}
     };
-    World.purge_grids_demo(exclude2, 2);   
+    // World.purge_grids_demo(exclude2, 2);   
     
     
 
