@@ -24,7 +24,7 @@ int main(int argc, char ** arg){
     
     Vector2 exclude2[] = {
         // {0,3},
-        {0,1},
+        {3,0},
         {0,0},
         // {1,2}
     };
