@@ -2,7 +2,7 @@
 #define PLATE_C
 #include "TED.hpp"
 #define MIN_ANG 3.0
-#define MAX_ANG 173.0
+#define MAX_ANG 177.0
 #define ERROR_MARG 0.005
 
 class plate{
@@ -21,12 +21,12 @@ private:
 public:
     Image localMap;
     Color color;
+    Color DebugRect;
     std::list<Vector2> mpoints;
 
     plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed);
     ~plate();
     Vector2 getPos();
-    Vector2 getSize();
     Vector2 getDirection();
     std::list<Vector2>& getHull();
     void regenBoundingBox();
@@ -60,7 +60,7 @@ plate::plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed){
     };
     this->direction = direction;
     this->speed = speed;
-    
+    DebugRect = GREEN;
 }
 
 plate::~plate(){
@@ -77,12 +77,18 @@ Vector2 plate::getPos(){
     };
 }
 
+Vector2 plate::getDirection(){
+    return this->direction;
+}
+
 std::list<Vector2>& plate::getHull(){
     return this->hull;
 }
 
 // Generate bounding box
 void plate::regenBoundingBox(){
+    Vector2 TempOffset;
+
     this->boundingBox = {
         this->hull.front().x,
         this->hull.front().y,
@@ -96,7 +102,25 @@ void plate::regenBoundingBox(){
         this->boundingBox.width = std::max(this->boundingBox.width, v1.x);
         this->boundingBox.height = std::max(this->boundingBox.height, v1.y);
     }
+
+    // recentering
+    TempOffset.x = (this->boundingBox.width + this->boundingBox.x)/2.0;
+    TempOffset.y = (this->boundingBox.height + this->boundingBox.y)/2.0;
+
+    // printf("RGBB%f:%f\n", this->boundingBox.x, this->boundingBox.width);
+    // printf("RGBB%f:%f\n", this->boundingBox.y, this->boundingBox.height);
+    // printf("RGBB%f:%f\n\n", TempOffset.x, TempOffset.y);
+    this->globalPos.x += TempOffset.x;
+    this->globalPos.y += TempOffset.y;
+
+    for(Vector2 &v1: this->hull){
+        v1.x -= TempOffset.x;
+        v1.y -= TempOffset.y;
+    }
+
 }
+
+
 
 
 // Separating Axis Theorem check
@@ -248,8 +272,6 @@ bool plate::selfCollisionDeformation(plate * Collision){
 
             Vector2 intersection = getIntersector(s_lv,o_lv);
 
-            
-
             if(std::isnan(intersection.x)){
                 continue;
             }
@@ -272,10 +294,13 @@ bool plate::selfCollisionDeformation(plate * Collision){
                 intersection.y >= std::min(o_v1.y, o_v2.y) - ERROR_MARG && intersection.y <= std::max(o_v1.y, o_v2.y) + ERROR_MARG
             ){
                 //adds it to a queue to be added
-
+                Vector2 momentum = {
+                    ((this->getDirection().x * this->speed) - (Collision->getDirection().x * Collision->speed))/2.0,
+                    ((this->getDirection().y * this->speed) - (Collision->getDirection().y * Collision->speed))/2.0
+                };
                 selfNewPoint.push_back((Vector2){
-                        intersection.x - this->getPos().x,
-                        intersection.y - this->getPos().y
+                        intersection.x - this->getPos().x - momentum.x,
+                        intersection.y - this->getPos().y - momentum.y
                     });
                 selfPrePointPtr.push_back(v1);
                 selfNextPointPtr.push_back(v2);
@@ -555,7 +580,7 @@ void plate::render(int pos_x, int pos_y){
     UnloadTexture(mapTexture);
     // ImageDrawCircle(&this->localMap, 5,5,10,RED);
     ImageDrawCircle(&this->localMap, this->localMap.width/2,this->localMap.height/2,3,BLUE);
-
+    ImageDrawRectangleLines(&this->localMap,{this->boundingBox.x + this->localMap.width/2,this->boundingBox.y + this->localMap.height/2, this->boundingBox.width - this->boundingBox.x, this->boundingBox.height - this->boundingBox.y},1,DebugRect);
 
     int i = 0;
     Vector2 vp = this->hull.back();
@@ -564,9 +589,12 @@ void plate::render(int pos_x, int pos_y){
         // printf("%d,%d\n",v.x,v.y);
         ImageDrawLine(&this->localMap, vp.x + this->localMap.width/2,vp.y + this->localMap.height/2,v.x + this->localMap.width/2,v.y + this->localMap.height/2,PINK);
         ImageDrawCircle(&this->localMap, v.x + this->localMap.width/2,v.y + this->localMap.height/2,5,GREEN);
-        ImageDrawText(&this->localMap,std::to_string(i).c_str(), v.x + 10 + this->localMap.width/2,v.y + 10 + this->localMap.height/2,15,WHITE);
+        ImageDrawText(&this->localMap,std::to_string(i).c_str(), v.x + 10 + this->localMap.width/2,v.y + 10 + this->localMap.height/2,15,color);
+        // ImageDrawText(&this->localMap,std::to_string((int)round(v.x)).c_str(), v.x + 10 + this->localMap.width/2,v.y + 20 + this->localMap.height/2,15,WHITE);
+        
         vp = v;
     }
+    
 
     int lx[9] = {-1, 0, 1, 1, 1, 0,-1,-1,-1};
     int ly[9] = {-1,-1,-1, 0, 1, 1, 1, 0,-1};

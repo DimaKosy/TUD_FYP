@@ -1,6 +1,7 @@
 #ifndef TED_H
 #define TED_H
 
+int GLOBAL_FLAG = 0;
 
 #include <iostream>
 #include <raylib.h>

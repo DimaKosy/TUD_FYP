@@ -3,11 +3,14 @@
 #define P_N 6
 #define CAM_SPEED 500
 
+
+
 int main(int argc, char ** arg){
     // Initialization
     //--------------------------------------------------------------------------------------
     const int screenWidth  = 128*6;
     const int screenHeight = 128*6;
+    bool render_bool = true;
 
     SetTraceLogLevel(LOG_ERROR); 
     InitWindow(screenWidth, screenHeight, "TED");
@@ -22,10 +25,10 @@ int main(int argc, char ** arg){
     Vector2 exclude2[] = {
         // {0,3},
         {0,2},
-        {1,3},
+        {0,0},
         // {1,2}
     };
-    World.purge_grids_demo(exclude2, 4);   
+    World.purge_grids_demo(exclude2, 2);   
     
     
 
@@ -69,6 +72,10 @@ int main(int argc, char ** arg){
             // World.purge_grids_demo(exclude,1);
         }
 
+        if (IsKeyPressed(KEY_RIGHT_ALT)){
+            render_bool = !render_bool;
+        }
+
         
         
 
@@ -79,7 +86,9 @@ int main(int argc, char ** arg){
         BeginDrawing();
             
             ClearBackground((Color){ 0, 0, 0, 255 });
-            World.render();
+            if(render_bool){
+                World.render();
+            }
             DrawText(std::to_string(GetFPS()).c_str(),0,0,20, WHITE);
             // DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
 

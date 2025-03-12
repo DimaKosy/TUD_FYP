@@ -4,7 +4,7 @@
 
 #define MAX_SPEED 2
 #define PH_COUNT 8
-#define COL_SEARCH_RAD 2
+#define COL_SEARCH_RAD 1
 
 class fixedWorld{
 private:
@@ -316,8 +316,16 @@ void fixedWorld::initPlateHull(){
                 }
                 
             }
+        }
+    }
 
-            p->regenBoundingBox();
+    for(int x = 0; x < grid_x; x++){
+        for(int y = 0; y < grid_y; y++){
+            gridCell * pts = grid[x][y];
+            for(plate * pt : pts->getPlates()){
+                printf("REGENBOUND %d, %d\n",x,y);
+                pt->regenBoundingBox();
+            }
         }
     }
 }
@@ -346,6 +354,7 @@ void fixedWorld::moveStepPlates(){
             for(plate * p : pt->getPlates()){
                 Vector2 v = p->getPos();
                 p->movePlateWrapped(map_x, map_y);
+                p->DebugRect = GREEN;
             }
         }
     }
@@ -385,9 +394,12 @@ void fixedWorld::moveStepPlates(){
                                 //     printf("(%f,%f),",v.x + p1->getPos().x,v.y + p1->getPos().y);
                                 // }
                                 // printf("\n");
+                                p->DebugRect = RED;
+                                p1->DebugRect = RED;
                                 p->selfCollisionDeformation(p1);
                                 // printf("Colliding\n");
                                 p->regenBoundingBox();
+                                p1->regenBoundingBox();
 
                                 
                             }
@@ -399,6 +411,28 @@ void fixedWorld::moveStepPlates(){
             }
         }
     }
+
+    // for(int x = 0; x < grid_x; x++){
+    //     for(int y = 0; y < grid_y; y++){
+
+    //         gridCell * pt = grid[x][y];
+
+    //         for(plate * p : pt->getPlates()){
+    //             Vector2 v = p->getPos();
+    //             // p->movePlateWrapped(map_x, map_y);
+
+    //             for(int x1 = -COL_SEARCH_RAD; x1 <= COL_SEARCH_RAD; x1++){
+    //                 for(int y1 = -COL_SEARCH_RAD; y1 <= COL_SEARCH_RAD; y1++){
+    //                     gridCell * pt1 = grid[(grid_x + x + x1) % grid_x][(grid_y + y + y1) % grid_y];
+
+
+    //                     for(plate * p1 : pt1->getPlates()){
+    //                     }
+    //                 }
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 void fixedWorld::moveAllPlates(Vector2 pos){
