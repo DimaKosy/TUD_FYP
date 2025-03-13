@@ -109,7 +109,8 @@ gridCell::~gridCell(){
 }
 
 void gridCell::DebugRender(){
-    DrawRectangleLines((int)pos.x,(int)pos.y,size_x, size_y, RED);
+    Color Col = plates.size() > 0 ? GREEN : RED;
+    DrawRectangleLines((int)pos.x,(int)pos.y,size_x, size_y, Col);
 }
 
 #endif

@@ -11,6 +11,7 @@ int main(int argc, char ** arg){
     const int screenWidth  = 128*8;
     const int screenHeight = 128*8;
     bool render_bool = true;
+    int TimeStep = 0;
 
     SetTraceLogLevel(LOG_ERROR); 
     InitWindow(screenWidth, screenHeight, "TED");
@@ -24,13 +25,17 @@ int main(int argc, char ** arg){
     
     Vector2 exclude2[] = {
         // {0,3},
-        {3,0},
-        {0,0},
+        {1,1},
+        {1,0},
         // {1,2}
     };
     World.purge_grids_demo(exclude2, 2);   
     
-    
+    // for(int i = 0; i < 3574; i++){
+    //     World.moveStepPlates();
+    //     World.updatePlatePositions();
+    //     TimeStep++;
+    // }
 
     SetTargetFPS(240);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
@@ -61,14 +66,13 @@ int main(int argc, char ** arg){
             // World.translateWorld(-30,0);
             // World.debugPlateVertexs();
             World.moveStepPlates();
+            TimeStep++;
         }
 
         if (IsKeyDown(KEY_LEFT_ALT)){
-            Vector2 exclude[] = {
-                {1,1}
-            };
             // World.debugPlateVertexs();
             World.moveStepPlates();
+            TimeStep++;
             // World.purge_grids_demo(exclude,1);
         }
 
@@ -90,6 +94,7 @@ int main(int argc, char ** arg){
                 World.render();
             }
             DrawText(std::to_string(GetFPS()).c_str(),0,0,20, WHITE);
+            DrawText(std::to_string(TimeStep).c_str(),0,20,20, WHITE);
             // DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
 
         EndDrawing();

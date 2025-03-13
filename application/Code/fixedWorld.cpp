@@ -242,6 +242,8 @@ void fixedWorld::moveStepPlates(){
             for(plate * p : pt->getPlates()){
                 Vector2 v = p->getPos();
                 p->movePlateWrapped(map_x, map_y);
+                // p->DeformBackfill();
+                p->AngleFilter();
                 p->DebugRect = GREEN;
             }
         }
@@ -263,9 +265,9 @@ void fixedWorld::moveStepPlates(){
                         gridCell * pt1 = grid[(grid_x + x + x1) % grid_x][(grid_y + y + y1) % grid_y];
                         Vector2 offset = {0,0};
 
-                        offset.x = (x + x1 < 0) ? (x + x1)*map_x : x + x1 >= grid_x ? (x + x1 - grid_x) * map_x : 0;
-                        offset.y = (y + y1 < 0) ? (y + y1)*map_y : y + y1 >= grid_y ? (y + y1 - grid_y) * map_y : 0;
-
+                        offset.x = (x + x1 < 0) ? -map_x : x + x1 >= grid_x ? map_x : 0;
+                        offset.y = (y + y1 < 0) ? -map_y : y + y1 >= grid_y ? map_y : 0;
+                        
                         for(plate * p1 : pt1->getPlates()){
                             // skips if the id of the plate is higher than the other plate or the same, avoids duplicate checks
                            
@@ -273,7 +275,7 @@ void fixedWorld::moveStepPlates(){
                                 continue;
                             }
 
-                            
+                            // printf("OFFSET %f,%f\n",offset.x, offset.y);
                             // p->selfCollisionCheck(p1);
                             if(p->selfAABBCollisionCheck(p1, offset)){
                                 // printf("\n\n");
