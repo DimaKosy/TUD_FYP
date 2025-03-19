@@ -330,17 +330,19 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     }
 
     // // check if either of the parent vertexs are inside the other shape
-    internalVertTest_deprecated(this, Collision, &otherPrePointPtr, &otherNextPointPtr, Offset);
-    internalVertTest_deprecated(Collision, this, &selfPrePointPtr, &selfNextPointPtr, (Vector2){-Offset.x, -Offset.y});
+    // internalVertTest_deprecated(this, Collision, &otherPrePointPtr, &otherNextPointPtr, Offset);
+    // internalVertTest_deprecated(Collision, this, &selfPrePointPtr, &selfNextPointPtr, (Vector2){-Offset.x, -Offset.y});
 
-    // VertDistFilter(this,2.0);
-    // VertDistFilter(Collision,2.0);
     
-    // internalVertTest(this, Collision, Offset);
-    // internalVertTest(Collision, this, Offset);
+    
+    internalVertTest(this, Collision, Offset);
+    internalVertTest(Collision, this, Offset);
 
     VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     VertAngleFilter(Collision, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
+
+    VertDistFilter(this,2.0);
+    VertDistFilter(Collision,2.0);
 
     
     // safety clear
@@ -443,16 +445,52 @@ void plate::internalVertTest_deprecated(plate * primary, plate * secondary, std:
 }
 
 void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset){
-    std::vector<std::list<Vector2>::iterator> removeList;
+    std::list<std::list<Vector2>::iterator> removeList;
+
+    for (auto h = secondary->hull.begin(); h != secondary->hull.end(); ++h) {
+        removeList.push_back(h);
+    }
+    
 
     for(auto p_vc = primary->hull.begin(); p_vc != primary->hull.end(); ++p_vc){
-        auto p_vp = (p_vc == primary->hull.begin()) ? std::prev(primary->hull.end()) : std::prev(p_vc); // previous ptr with wrap around
+        // auto p_vp = (p_vc == primary->hull.begin()) ? std::prev(primary->hull.end()) : std::prev(p_vc); // previous ptr with wrap around
         auto p_vn = std::next(p_vc); //next
 
-        for(auto s_vc : secondary->hull){
+        if(p_vn == primary->hull.end()){
+            p_vn = primary->hull.begin();
+        }
+        
+        Vector2 global_primary_vertice1 = (Vector2){p_vc->x + primary->getPos().x, p_vc->y + primary->getPos().y};
+        Vector2 global_primary_vertice2 = (Vector2){p_vn->x + primary->getPos().x, p_vn->y + primary->getPos().y};
 
+        for(auto s_vc : secondary->hull){
+            Vector2 global_secondary_vertice = (Vector2){s_vc.x + secondary->getPos().x + Offset.x, s_vc.y + secondary->getPos().y + Offset.y};
+
+            float crossvalue = crossproduct(global_primary_vertice1,global_primary_vertice2,global_secondary_vertice);
+
+            if(crossvalue < 0){
+                for(auto r = removeList.begin(); r != removeList.end();){
+                    if((*r)->x == s_vc.x && (*r)->y == s_vc.y){
+                        r = removeList.erase(r);
+                    }
+                    else {
+                        ++r; // Only increment if not erased
+                    }
+                }
+            }
         }
 
+    }
+
+    for(auto r : removeList){
+        for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
+            if (h->x == r->x && h->y == r->y) {  
+                // printf("erasing next %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+                h = secondary->hull.erase(h);  // Use returned iterator
+            } else {
+                ++h;  // Only increment if not erased
+            }
+        }
     }
 }
 

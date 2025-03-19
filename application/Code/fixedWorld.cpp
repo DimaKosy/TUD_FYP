@@ -242,9 +242,10 @@ void fixedWorld::moveStepPlates(){
             for(plate * p : pt->getPlates()){
                 Vector2 v = p->getPos();
                 p->movePlateWrapped(map_x, map_y);
-                // p->DeformBackfill();
+                p->DeformBackfill();
                 p->AngleFilter();
                 p->DebugRect = GREEN;
+                p->regenBoundingBox();
             }
         }
     }
@@ -292,9 +293,7 @@ void fixedWorld::moveStepPlates(){
                                 p->DebugRect = RED;
                                 p1->DebugRect = RED;
                                 p->selfCollisionDeformation(p1, offset);
-                                // printf("Colliding\n");
-                                p->regenBoundingBox();
-                                p1->regenBoundingBox();
+                                // printf("Colliding\n");                                
 
                                 
                             }

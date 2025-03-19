@@ -31,11 +31,11 @@ int main(int argc, char ** arg){
     };
     World.purge_grids_demo(exclude2, 2);   
     
-    // for(int i = 0; i < 3574; i++){
-    //     World.moveStepPlates();
-    //     World.updatePlatePositions();
-    //     TimeStep++;
-    // }
+    for(int i = 0; i < 0; i++){
+        World.moveStepPlates();
+        World.updatePlatePositions();
+        TimeStep++;
+    }
 
     SetTargetFPS(240);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
