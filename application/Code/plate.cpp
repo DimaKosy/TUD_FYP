@@ -360,8 +360,8 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
 
 
 
-    internalVertTest(this, Collision, Offset);
-    internalVertTest(Collision, this, Offset);
+    internalVertTest_deprecated2(this, Collision, Offset);
+    internalVertTest_deprecated2(Collision, this, Offset);
 
     VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     VertAngleFilter(Collision, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
