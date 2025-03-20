@@ -12,6 +12,7 @@ int main(int argc, char ** arg){
     const int screenHeight = 128*8;
     bool render_bool = true;
     int TimeStep = 0;
+    Color mouseColor = WHITE;
 
     SetTraceLogLevel(LOG_ERROR); 
     InitWindow(screenWidth, screenHeight, "TED");
@@ -25,17 +26,20 @@ int main(int argc, char ** arg){
     
     Vector2 exclude2[] = {
         // {0,3},
-        {1,1},
+        // {1,1},
         {1,0},
-        // {1,2}
+        {2,0}
     };
     World.purge_grids_demo(exclude2, 2);   
+
+
+    plate * followPlate = World.getGridCell(1,0)->getPlates().front();
     
-    for(int i = 0; i < 0; i++){
-        World.moveStepPlates();
-        World.updatePlatePositions();
-        TimeStep++;
-    }
+    // for(int i = 0; i < 23; i++){
+    //     World.moveStepPlates();
+    //     World.updatePlatePositions();
+    //     TimeStep++;
+    // }
 
     SetTargetFPS(240);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
@@ -69,7 +73,7 @@ int main(int argc, char ** arg){
             TimeStep++;
         }
 
-        if (IsKeyDown(KEY_LEFT_ALT)){
+        if (IsKeyDown(KEY_LEFT_CONTROL)){
             // World.debugPlateVertexs();
             World.moveStepPlates();
             TimeStep++;
@@ -95,6 +99,10 @@ int main(int argc, char ** arg){
             }
             DrawText(std::to_string(GetFPS()).c_str(),0,0,20, WHITE);
             DrawText(std::to_string(TimeStep).c_str(),0,20,20, WHITE);
+
+            mouseColor = followPlate->internalTest(GetMousePosition())? RED:GREEN;
+
+            DrawCircle(GetMousePosition().x, GetMousePosition().y,15, mouseColor);
             // DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
 
         EndDrawing();

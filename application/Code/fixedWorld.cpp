@@ -36,6 +36,9 @@ public:
     // Getting the grid coords
     Vector2 getGridIndex2D(int x, int y);
 
+    //Get gridcell
+    gridCell * getGridCell(int x, int y);
+
     // moves all plates
     void moveStepPlates();
     void moveAllPlates(Vector2 pos);
@@ -213,6 +216,7 @@ void fixedWorld::initPlateHull(){
             for(plate * pt : pts->getPlates()){
                 printf("REGENBOUND %d, %d\n",x,y);
                 pt->regenBoundingBox();
+                pt->regenBoundingBox();
             }
         }
     }
@@ -233,6 +237,10 @@ Vector2 fixedWorld::getGridIndex2D(int mx, int my){
     return (Vector2){gx,gy};
 }
 
+gridCell * fixedWorld::getGridCell(int x, int y){
+    return grid[x][y];
+}
+
 void fixedWorld::moveStepPlates(){
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
@@ -240,10 +248,19 @@ void fixedWorld::moveStepPlates(){
             gridCell * pt = grid[x][y];
 
             for(plate * p : pt->getPlates()){
+
+                for(auto v:p->getHull()){
+                    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
+                }
+    
+                printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
+
+
+
                 Vector2 v = p->getPos();
                 p->movePlateWrapped(map_x, map_y);
                 p->DeformBackfill();
-                p->AngleFilter();
+                // p->AngleFilter();
                 p->DebugRect = GREEN;
                 p->regenBoundingBox();
             }
@@ -280,16 +297,7 @@ void fixedWorld::moveStepPlates(){
                             // p->selfCollisionCheck(p1);
                             if(p->selfAABBCollisionCheck(p1, offset)){
                                 // printf("\n\n");
-                                // printf("PRE HULL 1\n");
-                                // for(auto v:p->getHull()){
-                                //     printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
-                                // }
                                 
-                                // printf("\nPRE HULL 2\n");
-                                // for(auto v:p1->getHull()){
-                                //     printf("(%f,%f),",v.x + p1->getPos().x,v.y + p1->getPos().y);
-                                // }
-                                // printf("\n");
                                 p->DebugRect = RED;
                                 p1->DebugRect = RED;
                                 p->selfCollisionDeformation(p1, offset);
@@ -397,11 +405,11 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
 // goes through every grid cell and every plate thats in that cell and renders it
 void fixedWorld::render(){      
 
-    for(int x = 0; x < this->grid_x; x++){
-        for(int y = 0; y < this->grid_y; y++){
-            grid[x][y]->DebugRender();
-        }        
-    }
+    // for(int x = 0; x < this->grid_x; x++){
+    //     for(int y = 0; y < this->grid_y; y++){
+    //         grid[x][y]->DebugRender();
+    //     }        
+    // }
     
     accessWrappedEdge(renderCall);
 

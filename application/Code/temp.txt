@@ -1,2 +1,4 @@
-(B[2]-B[1])*x-(A[2]-A[1])*y+((A[2]*B[1])-(A[1]*B[2]))\ =\ 0
-(D[2]-D[1])*x -(C[2]-C[1])*y + ((C[2]*D[1])-(C[1]*D[2]))
+for(auto v:Collision->getHull()){
+        printf("(%f,%f),",v.x + Collision->getPos().x,v.y + Collision->getPos().y);
+    }
+    printf("(%f,%f)\n", Collision->getHull().front().x  + Collision->getPos().x, Collision->getHull().front().y  + Collision->getPos().y);

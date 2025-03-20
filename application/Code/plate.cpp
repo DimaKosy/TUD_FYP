@@ -3,6 +3,7 @@
 #include "TED.hpp"
 #define MIN_ANG 2.0
 #define MAX_ANG 178.0
+#define MAX_DISTANCE 10
 #define ERROR_MARG 0.005
 
 class plate{
@@ -16,9 +17,11 @@ private:
     Texture2D mapTexture;
 
     void internalVertTest_deprecated(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr, Vector2 Offset);
+    void internalVertTest_deprecated2(plate * primary, plate * secondary, Vector2 Offset);
     void internalVertTest(plate * primary, plate * secondary, Vector2 Offset);
     void VertAngleFilter(plate * primary, double min_angle, double max_angle);
     void VertDistFilter(plate * primary, double min_distance);
+    void SplitConcavePlate();
 
 public:
     Image localMap;
@@ -37,6 +40,7 @@ public:
     bool selfSATCollisionCheck(plate * Collision);
     bool selfAABBCollisionCheck(plate * Collision, Vector2 Offset);
     bool selfCollisionDeformation(plate * Collision, Vector2 Offset);
+    bool internalTest(Vector2 Offset);
 
     void movePlate();
     void movePlateWrapped(int wrap_x, int wrap_y);
@@ -62,7 +66,7 @@ plate::plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed){
     this->color = (Color){
         .r = (unsigned char)(rand()%256),
         .g = (unsigned char)(rand()%256),
-        0,
+        .b = (unsigned char)(rand()%256),
         .a = 255
     };
     this->direction = direction;
@@ -293,9 +297,10 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
                 intersection.y >= std::min(o_v1.y, o_v2.y) - ERROR_MARG && intersection.y <= std::max(o_v1.y, o_v2.y) + ERROR_MARG
             ){
                 //adds it to a queue to be added
+
                 Vector2 momentum = {
-                    ((this->getDirection().x * this->speed) - (Collision->getDirection().x * Collision->speed))/2.0,
-                    ((this->getDirection().y * this->speed) - (Collision->getDirection().y * Collision->speed))/2.0
+                    ((this->getDirection().x * this->speed) - (Collision->getDirection().x * Collision->speed))/2,
+                    ((this->getDirection().y * this->speed) - (Collision->getDirection().y * Collision->speed))/2
                 };
                 selfNewPoint.push_back((Vector2){
                         intersection.x - this->getPos().x - momentum.x,
@@ -305,8 +310,8 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
                 selfNextPointPtr.push_back(v2);
 
                 otherNewPoint.push_back((Vector2){
-                    intersection.x - Collision->getPos().x - Offset.x,
-                    intersection.y - Collision->getPos().y - Offset.y
+                    intersection.x - Collision->getPos().x - Offset.x - momentum.x,
+                    intersection.y - Collision->getPos().y - Offset.y - momentum.y
                 });
                 
                 otherPrePointPtr.push_back(v3);
@@ -325,24 +330,52 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     // inseting the vertices
     for(int i = 0; i < selfNewPoint.size(); i++){
         // adds it to both hulls
+        printf("DEBUG AD_1 COLLISION DEFORM %f,%f \n", selfNewPoint[i].x + this->getPos().x, selfNewPoint[i].y + this->getPos().y);
+
         this->hull.insert(selfNextPointPtr[i],selfNewPoint[i]);
+    }
+
+    // inseting the vertices
+    for(int i = 0; i < otherNewPoint.size(); i++){
+        // adds it to both hulls
+        printf("DEBUG AD_2 COLLISION DEFORM %f,%f \n", otherNewPoint[i].x + Collision->getPos().x, otherNewPoint[i].y + Collision->getPos().y);
+
         Collision->hull.insert(otherNextPointPtr[i],otherNewPoint[i]);
     }
+
+    for(auto v:this->getHull()){
+        printf("(%f,%f),",v.x + this->getPos().x,v.y + this->getPos().y);
+    }
+    printf("(%f,%f)\n", this->getHull().front().x  + this->getPos().x, this->getHull().front().y  + this->getPos().y);
+
+
+    for(auto v:Collision->getHull()){
+        printf("(%f,%f),",v.x + Collision->getPos().x,v.y + Collision->getPos().y);
+    }
+    printf("(%f,%f)\n", Collision->getHull().front().x  + Collision->getPos().x, Collision->getHull().front().y  + Collision->getPos().y);
 
     // // check if either of the parent vertexs are inside the other shape
     // internalVertTest_deprecated(this, Collision, &otherPrePointPtr, &otherNextPointPtr, Offset);
     // internalVertTest_deprecated(Collision, this, &selfPrePointPtr, &selfNextPointPtr, (Vector2){-Offset.x, -Offset.y});
 
-    
-    
+
+
     internalVertTest(this, Collision, Offset);
     internalVertTest(Collision, this, Offset);
 
     VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     VertAngleFilter(Collision, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
+    
+    VertDistFilter(this,speed*2);
+    VertDistFilter(Collision,speed);
 
-    VertDistFilter(this,2.0);
-    VertDistFilter(Collision,2.0);
+    printf("H1\t");
+    this->SplitConcavePlate();
+    printf("H2\t");
+    Collision->SplitConcavePlate();
+    
+
+    
 
     
     // safety clear
@@ -444,54 +477,199 @@ void plate::internalVertTest_deprecated(plate * primary, plate * secondary, std:
     }
 }
 
-void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset){
+void plate::internalVertTest_deprecated2(plate * primary, plate * secondary, Vector2 Offset){
     std::list<std::list<Vector2>::iterator> removeList;
+    bool erased = false;
 
+    // adds all the vertices to the remove list
     for (auto h = secondary->hull.begin(); h != secondary->hull.end(); ++h) {
         removeList.push_back(h);
     }
-    
 
-    for(auto p_vc = primary->hull.begin(); p_vc != primary->hull.end(); ++p_vc){
-        // auto p_vp = (p_vc == primary->hull.begin()) ? std::prev(primary->hull.end()) : std::prev(p_vc); // previous ptr with wrap around
-        auto p_vn = std::next(p_vc); //next
+    // loops through remove list
+    for(auto r = removeList.begin(); r != removeList.end();){
+        erased = false;
 
-        if(p_vn == primary->hull.end()){
-            p_vn = primary->hull.begin();
-        }
-        
-        Vector2 global_primary_vertice1 = (Vector2){p_vc->x + primary->getPos().x, p_vc->y + primary->getPos().y};
-        Vector2 global_primary_vertice2 = (Vector2){p_vn->x + primary->getPos().x, p_vn->y + primary->getPos().y};
+        // loops through all hull vertices
+        for(auto p_vc = primary->hull.begin(); p_vc != primary->hull.end(); ++p_vc){
+            auto p_vn = std::next(p_vc); //next
 
-        for(auto s_vc : secondary->hull){
-            Vector2 global_secondary_vertice = (Vector2){s_vc.x + secondary->getPos().x + Offset.x, s_vc.y + secondary->getPos().y + Offset.y};
+            if(p_vn == primary->hull.end()){
+                p_vn = primary->hull.begin();
+            }
 
+            // gets the global position of vertices
+            Vector2 global_primary_vertice1 = (Vector2){p_vc->x + primary->getPos().x, p_vc->y + primary->getPos().y};
+            Vector2 global_primary_vertice2 = (Vector2){p_vn->x + primary->getPos().x, p_vn->y + primary->getPos().y};
+            Vector2 global_secondary_vertice = (Vector2){(*(*r)).x + secondary->getPos().x + Offset.x, (*(*r)).y + secondary->getPos().y + Offset.y};
+
+            // gets the crossproduct 
             float crossvalue = crossproduct(global_primary_vertice1,global_primary_vertice2,global_secondary_vertice);
 
-            if(crossvalue < 0){
-                for(auto r = removeList.begin(); r != removeList.end();){
-                    if((*r)->x == s_vc.x && (*r)->y == s_vc.y){
-                        r = removeList.erase(r);
-                    }
-                    else {
-                        ++r; // Only increment if not erased
-                    }
+            // checks if its left or right of the line
+            if(crossvalue < MAX_DISTANCE){ //removes if its to the right
+                
+                Vector3 perBisector = getPerpindicularBisector(global_primary_vertice1, global_primary_vertice2);
+
+                Vector3 LTP_1 = getPerpLineThroughPoint(perBisector, global_primary_vertice1);
+                Vector3 LTP_2 = getPerpLineThroughPoint(perBisector, global_primary_vertice2);
+                Vector3 LTP_3 = getPerpLineThroughPoint(perBisector, global_secondary_vertice);
+
+                float a,b;
+
+                a = std::min(LTP_1.z,LTP_2.z);
+                b = std::max(LTP_1.z,LTP_2.z);
+
+                if(a <= LTP_3.z && LTP_3.z <= b){
+                    // printf("(%f,%f),",(*(*r)).x + secondary->getPos().x, (*(*r)).y + secondary->getPos().y);
+                    r = removeList.erase(r);    //returns pointer to the next element if erased
+                    erased = true;
+                    break;
                 }
             }
-        }
 
+        }
+        
+
+        if(!erased){    //increments if nothing was erased
+            ++r;
+        }
     }
 
+    // printf("\b \n");
     for(auto r : removeList){
+        // printf("NR (%f,%f)\n",(*r).x + secondary->getPos().x, (*r).y + secondary->getPos().y);
         for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
-            if (h->x == r->x && h->y == r->y) {  
-                // printf("erasing next %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+            if (h == r) {  
+
+                printf("DEBUG RM INTERNAL_VERT %f,%f \n", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
                 h = secondary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
             }
         }
     }
+}
+
+void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset){
+    std::list<std::list<Vector2>::iterator> removeList;
+
+    // adds all the vertices to the remove list
+    for (auto h = secondary->hull.begin(); h != secondary->hull.end(); ++h) {
+        removeList.push_back(h);
+    }
+
+    // loops through remove list
+    for(auto r = removeList.begin(); r != removeList.end();){
+        int intersections = 0;
+
+        Vector2 global_secondary_vertice = (Vector2){(*(*r)).x + secondary->getPos().x + Offset.x, (*(*r)).y + secondary->getPos().y + Offset.y};
+        Vector3 testingLine = getLineEquation(global_secondary_vertice,primary->getPos());
+
+        // loops through all hull vertices
+        for(auto p_vc = primary->hull.begin(); p_vc != primary->hull.end(); ++p_vc){
+            auto p_vn = std::next(p_vc); //next
+
+            if(p_vn == primary->hull.end()){
+                p_vn = primary->hull.begin();
+            }
+
+            // gets the global position of vertices
+            Vector2 global_primary_vertice1 = (Vector2){p_vc->x + primary->getPos().x, p_vc->y + primary->getPos().y};
+            Vector2 global_primary_vertice2 = (Vector2){p_vn->x + primary->getPos().x, p_vn->y + primary->getPos().y};
+
+
+            Vector3 lineEdge = getLineEquation(global_primary_vertice1,global_primary_vertice2);
+
+            Vector2 inersect_point = getIntersector(testingLine, lineEdge);
+
+            inersect_point.x = -inersect_point.x;
+            inersect_point.y = -inersect_point.y;
+
+            float crossvalue = crossproduct(global_primary_vertice1,global_primary_vertice2,global_secondary_vertice);
+
+
+            if(abs(crossvalue) < MAX_DISTANCE){ //removes if its to the right
+
+                printf("crossvalue Passed %f,%f\t\t%d\n",global_secondary_vertice.x, global_secondary_vertice.y,intersections);
+                Vector3 perBisector = getPerpindicularBisector(global_primary_vertice1, global_primary_vertice2);
+
+                Vector3 LTP_1 = getPerpLineThroughPoint(perBisector, global_primary_vertice1);
+                Vector3 LTP_2 = getPerpLineThroughPoint(perBisector, global_primary_vertice2);
+                Vector3 LTP_3 = getPerpLineThroughPoint(perBisector, global_secondary_vertice);
+
+                float a,b;
+
+                a = std::min(LTP_1.z,LTP_2.z);
+                b = std::max(LTP_1.z,LTP_2.z);
+
+                if(a <= LTP_3.z && LTP_3.z <= b){
+                    intersections++;
+                }
+                continue;
+            }
+
+            if( //checks if the intersection is within the line segment
+                inersect_point.x >= std::min(global_primary_vertice1.x, global_primary_vertice2.x) - ERROR_MARG && inersect_point.x <= std::max(global_primary_vertice1.x, global_primary_vertice2.x) + ERROR_MARG &&
+                inersect_point.y >= std::min(global_primary_vertice1.y, global_primary_vertice2.y) - ERROR_MARG && inersect_point.y <= std::max(global_primary_vertice1.y, global_primary_vertice2.y) + ERROR_MARG &&
+                inersect_point.x >= std::min(global_secondary_vertice.x, primary->getPos().x) - ERROR_MARG && inersect_point.x <= std::max(global_secondary_vertice.x, primary->getPos().x) + ERROR_MARG &&
+                inersect_point.y >= std::min(global_secondary_vertice.y, primary->getPos().y) - ERROR_MARG && inersect_point.y <= std::max(global_secondary_vertice.y, primary->getPos().y) + ERROR_MARG
+
+            ){
+                printf("Intersection Passed %f,%f\t%d\n",global_secondary_vertice.x, global_secondary_vertice.y,intersections);
+                intersections++;
+            }
+        }
+
+        if((intersections % 2) != 0){
+            // printf("(%f,%f),",(*(*r)).x + secondary->getPos().x, (*(*r)).y + secondary->getPos().y);
+            r = removeList.erase(r);    //returns pointer to the next element if erased
+        }
+        else{    //increments if nothing was erased
+            ++r;
+        }
+    }
+
+    // printf("\b \n");
+    for(auto r : removeList){
+        // printf("NR (%f,%f)\n",(*r).x + secondary->getPos().x, (*r).y + secondary->getPos().y);
+        for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
+            if (h == r) {  
+
+                printf("DEBUG RM INTERNAL_VERT %f,%f \n", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+                h = secondary->hull.erase(h);  // Use returned iterator
+            } else {
+                ++h;  // Only increment if not erased
+            }
+        }
+    }
+}
+
+bool plate::internalTest(Vector2 testPos){    
+
+    for(auto p_vc = this->hull.begin(); p_vc != this->hull.end(); ++p_vc){
+        // auto p_vp = (p_vc == primary->hull.begin()) ? std::prev(primary->hull.end()) : std::prev(p_vc); // previous ptr with wrap around
+        auto p_vn = std::next(p_vc); //next
+
+        if(p_vn == this->hull.end()){
+            p_vn = this->hull.begin();
+        }
+        
+        Vector2 global_this_vertice1 = (Vector2){p_vc->x + this->getPos().x, p_vc->y + this->getPos().y};
+        Vector2 global_this_vertice2 = (Vector2){p_vn->x + this->getPos().x, p_vn->y + this->getPos().y};
+
+        
+
+        float crossvalue = crossproduct(global_this_vertice1, global_this_vertice2, testPos);
+
+        if(crossvalue < 0){
+            return true;
+        }
+
+    }
+
+    return false;
+
 }
 
 void plate::VertAngleFilter(plate * primary, double min_angle, double max_angle){
@@ -507,7 +685,12 @@ void plate::VertAngleFilter(plate * primary, double min_angle, double max_angle)
         }
 
         float angle = angleBetween(*vp, *vc, *vn);
-        if(angle < min_angle || angle > max_angle){
+        if(
+            (angle < min_angle || angle > max_angle) &&
+            (sqrt(pow(vn->x - vc->x,2) + pow(vn->y - vc->y,2) < this->speed*3)) &&
+            (sqrt(pow(vc->x - vp->x,2) + pow(vc->y - vp->y,2) < this->speed*3))
+            
+        ){
             removeList.push_back(vc);
         }
         
@@ -516,8 +699,8 @@ void plate::VertAngleFilter(plate * primary, double min_angle, double max_angle)
 
     for(auto ptr : removeList){
         for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
-            if (h->x == ptr->x && h->y == ptr->y) {  
-                // printf("erasing pre %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+            if (h == ptr) {  
+                printf("DEBUG RM ANGLE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
                 h = primary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
@@ -562,7 +745,7 @@ void plate::VertDistFilter(plate * primary, double min_distance){
     for(auto ptr : removeList){
         for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
             if (h->x == ptr->x && h->y == ptr->y) {  
-                // printf("erasing pre %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+                printf("DEBUG RM DISTANCE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
                 h = primary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
@@ -570,6 +753,8 @@ void plate::VertDistFilter(plate * primary, double min_distance){
         }
     }
 }
+
+
 
 void plate::movePlate(){
     this->globalPos.x += this->direction.x * this->speed;
@@ -604,33 +789,34 @@ void plate::DeformBackfill(){
 
         // normal of edge
         Vector2 normal_p = Vector2Normalize({-(p_vp->y - p_vc->y),(p_vp->x - p_vc->x)});
-        Vector2 normal_n = Vector2Normalize({-(p_vn->y - p_vc->y),(p_vn->x - p_vc->x)});
+        Vector2 normal_n = Vector2Normalize({-(p_vc->y - p_vn->y),(p_vc->x - p_vn->x)});
+        // Vector2 normal_n = Vector2Normalize({-(p_vn->y - p_vc->y),(p_vn->x - p_vc->x)});
         
         // dot product
-        if((normal_p.x*direction.x + normal_p.y*direction.y) > 0){
+        if((normal_p.x*direction.x + normal_p.y*direction.y) >= 0){
             continue;
         }
 
         // send point back
 
         selfNewPoint.push_back((Vector2){
-            p_vp->x - direction.x,
-            p_vp->y - direction.y
+            p_vp->x - (direction.x * speed),
+            p_vp->y - (direction.y * speed)
         });
         selfNextPointPtr.push_back(p_vc);
 
         // check for next edge to see if its facing
         // dot product
         // queue center vertex to be removed if the next edge is facing away from direction
-        if((normal_n.x*direction.x + normal_n.y*direction.y) > 0){
+        if((normal_n.x*direction.x + normal_n.y*direction.y) < 0){
             removeList.push_back(p_vc);
             continue;
         }
 
         // // send point back
         selfNewPoint.push_back((Vector2){
-            p_vc->x - direction.x,
-            p_vc->y - direction.y
+            p_vc->x - direction.x * speed,
+            p_vc->y - direction.y * speed
         });
         selfNextPointPtr.push_back(p_vc);
         
@@ -659,6 +845,27 @@ void plate::DeformBackfill(){
     removeList.clear();
 }
 
+void plate::SplitConcavePlate(){
+    for(auto vc = this->hull.begin(); vc != hull.end(); ++vc){
+        auto vp = (vc == this->hull.begin()) ? std::prev(this->hull.end()) : std::prev(vc); // previous ptr
+        auto vn = std::next(vc); //next
+        
+        // wrap
+        if(vn == this->hull.end()){
+            vn == this->hull.begin();
+        }
+
+
+        float cp = crossproduct(*vp,*vc,*vn);
+
+        if(cp < 0){
+            printf("Concave\n");
+            return;
+        }
+    }
+    printf("Convex\n");
+}
+
 void plate::setPos(Vector2 pos){
     this->globalPos = pos;
 }
@@ -682,15 +889,24 @@ void plate::render(int pos_x, int pos_y){
     UnloadTexture(mapTexture);
     // ImageDrawCircle(&this->localMap, 5,5,10,RED);
     ImageDrawCircle(&this->localMap, this->localMap.width/2,this->localMap.height/2,3,BLUE);
+    ImageDrawLine(&this->localMap, this->localMap.width/2,this->localMap.height/2,direction.x*50 + this->localMap.width/2,direction.y*50 + this->localMap.height/2,PINK);
     ImageDrawText(&this->localMap,std::to_string(this->hull.size()).c_str(), this->localMap.width/2,this->localMap.height/2,15,color);
-    ImageDrawRectangleLines(&this->localMap,{this->boundingBox.x + this->localMap.width/2,this->boundingBox.y + this->localMap.height/2, this->boundingBox.width - this->boundingBox.x, this->boundingBox.height - this->boundingBox.y},1,DebugRect);
+    // ImageDrawRectangleLines(&this->localMap,{this->boundingBox.x + this->localMap.width/2,this->boundingBox.y + this->localMap.height/2, this->boundingBox.width - this->boundingBox.x, this->boundingBox.height - this->boundingBox.y},1,DebugRect);
 
     int i = 0;
     Vector2 vp = this->hull.back();
     for(Vector2 v : this->hull){
         i++;
         // printf("%d,%d\n",v.x,v.y);
-        ImageDrawLine(&this->localMap, vp.x + this->localMap.width/2,vp.y + this->localMap.height/2,v.x + this->localMap.width/2,v.y + this->localMap.height/2,PINK);
+        Vector2 normal_p = Vector2Normalize({-(vp.y - v.y),(vp.x - v.x)});
+        float dir = (normal_p.x*direction.x + normal_p.y*direction.y);
+
+        Color edgeColor = dir > 0? GREEN:RED;
+
+        ImageDrawLine(&this->localMap, vp.x + this->localMap.width/2,vp.y + this->localMap.height/2,v.x + this->localMap.width/2,v.y + this->localMap.height/2,edgeColor);
+        
+        
+        
         ImageDrawCircle(&this->localMap, v.x + this->localMap.width/2,v.y + this->localMap.height/2,5,GREEN);
         ImageDrawText(&this->localMap,std::to_string(i).c_str(), v.x + 10 + this->localMap.width/2,v.y + 10 + this->localMap.height/2,15,color);
         // ImageDrawText(&this->localMap,std::to_string((int)round(v.x)).c_str(), v.x + 10 + this->localMap.width/2,v.y + 20 + this->localMap.height/2,15,WHITE);
@@ -721,7 +937,4 @@ void plate::render(int pos_x, int pos_y){
     WHITE);    
 }
 
-void plate::deform(plate * self, plate * other){
-    
-}
 #endif
