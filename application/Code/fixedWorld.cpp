@@ -95,7 +95,7 @@ void fixedWorld::init_plates(){
     plate * p;
     
 
-    printf("Grids: [%d][%d]\n",grid_x, grid_y);
+    // printf("Grids: [%d][%d]\n",grid_x, grid_y);
     // setting the grid cell size
     int grid_size_x = map_x/grid_x;
     int grid_size_y = map_y/grid_y;
@@ -122,8 +122,6 @@ void fixedWorld::init_plates(){
         }
     }
 
-    printf("Finished pixel assign\n");
-
     initPlateHull();
     return;
 }
@@ -135,7 +133,7 @@ void fixedWorld::initPlateHull(){
 
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
-            printf("GRID %d:%d\n",x,y);
+            // printf("GRID %d:%d\n",x,y);
             plate *p = grid[x][y]->getPlates().front();
             Vector3 pb_array[9];
 
@@ -172,7 +170,7 @@ void fixedWorld::initPlateHull(){
                     printf("FAILED MULTI\n");
                 }
 
-                printf("SET 0\n");
+                // printf("SET 0\n");
                 // finds closest Vector
                 float d1 = std::isnan(static_cast<double>(i1.x))?__FLT_MAX__:distance(p->getPos(), i1);
                 float d2 = std::isnan(static_cast<double>(i2.x))?__FLT_MAX__:distance(p->getPos(), i2);
@@ -180,19 +178,19 @@ void fixedWorld::initPlateHull(){
                 
                 if(d1 <= d2 && d1 <= d3){
                     res = i1;
-                    printf("PRIMARY %f:%f:%f\n",d1,d2,d3);
+                    // printf("PRIMARY %f:%f:%f\n",d1,d2,d3);
                 }
                 if(d2 <= d1 && d2 <= d3){
                     res = i2;
-                    printf("SECONDARY %f:%f:%f\n",d1,d2,d3);
+                    // printf("SECONDARY %f:%f:%f\n",d1,d2,d3);
                 }
                 if(d3 <= d2 && d3 <= d1){
                     res = i3;
-                    printf("TERTIARY %f:%f:%f\n",d1,d2,d3);
+                    // printf("TERTIARY %f:%f:%f\n",d1,d2,d3);
                 }
                 // res = d1 < d2 ? i1 : i2;
             
-                printf("OUT %f:%f\n",res.x, res.y);
+                // printf("OUT %f:%f\n",res.x, res.y);
                 res = {res.x - p->getPos().x, res.y - p->getPos().y};
                 
                 bool temp_skipper = false;
@@ -214,7 +212,7 @@ void fixedWorld::initPlateHull(){
         for(int y = 0; y < grid_y; y++){
             gridCell * pts = grid[x][y];
             for(plate * pt : pts->getPlates()){
-                printf("REGENBOUND %d, %d\n",x,y);
+                // printf("REGENBOUND %d, %d\n",x,y);
                 pt->regenBoundingBox();
                 pt->regenBoundingBox();
             }
@@ -249,11 +247,11 @@ void fixedWorld::moveStepPlates(){
 
             for(plate * p : pt->getPlates()){
 
-                for(auto v:p->getHull()){
-                    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
-                }
+                // for(auto v:p->getHull()){
+                //     printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
+                // }
     
-                printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
+                // printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
 
 
 
@@ -462,7 +460,6 @@ void fixedWorld::purge_grids_demo(Vector2 exclude [], int length){
             temp = false;
             
             // loops through exclude list
-            printf("sizeof %d\n",length);
             for(int i = 0; i < length; i++){
                 if(exclude[i].x == x && exclude[i].y == y){
                     temp = true;

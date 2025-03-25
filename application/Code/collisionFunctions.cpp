@@ -87,4 +87,8 @@ float crossproduct(Vector2 a, Vector2 b, Vector2 c){
     return ((b.x-a.x) * (c.y-a.y) - (b.y-a.y) * (c.x-a.x));
 }
 
+
+// float Vector2Distance(Vector2 A, Vector2 B){
+//     return sqrt(pow(B.x - A.x,2) + pow(B.y - A.y,2));
+// }
 #endif
