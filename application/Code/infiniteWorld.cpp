@@ -67,7 +67,6 @@ infiniteWorld::infiniteWorld(int map_x, int map_y, int grid_x, int grid_y, int s
                         (rand()%(grid_size_x)),
                         (rand()%(grid_size_y))
                     },
-                    GenImageColor(map_x, map_y, BLACK),
                     Vector2Normalize((Vector2){rand()%100, rand()%100}),
                     3 + (rand()%MAX_SPEED)
                 );

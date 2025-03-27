@@ -3,6 +3,7 @@
 #include "TED.hpp"
 
 #define MAX_SPEED 2
+#define DEPTH 3
 #define PH_COUNT 8
 #define COL_SEARCH_RAD 2
 
@@ -56,7 +57,6 @@ public:
 };
 
 fixedWorld::fixedWorld(int map_x, int map_y, int grid_x, int grid_y, int seed){
-    Image blankMap = GenImageColor(map_x, map_y, BLACK);
     
 
     this->map_x = map_x;
@@ -75,9 +75,6 @@ fixedWorld::fixedWorld(int map_x, int map_y, int grid_x, int grid_y, int seed){
 
     //creates a pointer link between grid which spans outside of render area and inner grid
     init_plates();
-    
-    this->worldMap = LoadTextureFromImage(blankMap); 
-    UnloadImage(blankMap);
 }
 
 fixedWorld::~fixedWorld(){
@@ -115,7 +112,6 @@ void fixedWorld::init_plates(){
                         (rand()%(grid_size_x)),
                         (rand()%(grid_size_y))
                     },
-                    GenImageColor(grid_size_x*3, grid_size_y*3, BLACK),
                     Vector2Normalize((Vector2){rand()%100, rand()%100}),
                     3 + (rand()%MAX_SPEED)
                 );
@@ -123,6 +119,7 @@ void fixedWorld::init_plates(){
     }
 
     initPlateHull();
+    
     return;
 }
 
@@ -150,7 +147,6 @@ void fixedWorld::initPlateHull(){
 
                 float mx = (p->getPos().x + p2->getPos().x + offset_x) / 2.0;
                 float my = (p->getPos().y + p2->getPos().y + offset_y) / 2.0;
-                p->mpoints.push_back((Vector2){mx  - p->getPos().x, my - p->getPos().y});
             }
 
             for(int i = 0; i < PH_COUNT; i++){
@@ -215,6 +211,7 @@ void fixedWorld::initPlateHull(){
                 // printf("REGENBOUND %d, %d\n",x,y);
                 pt->regenBoundingBox();
                 pt->regenBoundingBox();
+                pt->initHeightMesh(DEPTH);
             }
         }
     }
@@ -260,7 +257,11 @@ void fixedWorld::moveStepPlates(){
                 p->DeformBackfill();
                 // p->AngleFilter();
                 p->DebugRect = GREEN;
-                p->regenBoundingBox();
+                Vector2 temp = p->regenBoundingBox();
+                p->getMesh()->stretchDeform({
+                    temp.x,
+                    temp.y
+                });
             }
         }
     }

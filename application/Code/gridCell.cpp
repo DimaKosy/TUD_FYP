@@ -23,7 +23,7 @@ public:
     void regenGridCell(Vector2 pos);
 
     void addPlate(plate * p);
-    void addNewPlate(Vector2 platePos, Image m, Vector2 direction, float speed);
+    void addNewPlate(Vector2 platePos, Vector2 direction, float speed);
     const std::list<plate *> getPlates();
     void deletePlate(int i);
     void popPlate(plate * p);
@@ -79,11 +79,10 @@ void gridCell::addPlate(plate * p){
 }
 
 // initialises and adds plate to grid cell
-void gridCell::addNewPlate(Vector2 platePos, Image m, Vector2 direction, float speed){
+void gridCell::addNewPlate(Vector2 platePos, Vector2 direction, float speed){
     printf("NEW PLATE: M %f:%f, speed %f\n",direction.x,direction.y,speed);
     this->plates.push_back( 
     new plate(
-        m,
         (Vector2){(platePos.x * (1 - (GRID_B * 2))) + pos.x + (size_x * GRID_B), (platePos.y * (1 - (GRID_B * 2))) + pos.y + (size_y * GRID_B)},
         direction,
         speed

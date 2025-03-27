@@ -12,9 +12,7 @@ private:
     Vector2 direction;
     Rectangle boundingBox;
     std::list<Vector2> hull;
-    
-    float speed;
-    Texture2D mapTexture;
+    heightMesh mesh;
 
     void internalVertTest_deprecated(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr, Vector2 Offset);
     void internalVertTest_deprecated2(plate * primary, plate * secondary, Vector2 Offset);
@@ -24,17 +22,20 @@ private:
     void SplitConcavePlate();
 
 public:
-    Image localMap;
     Color color;
     Color DebugRect;
-    std::list<Vector2> mpoints;
 
-    plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed);
+    float speed;
+
+    plate(Vector2 globalPos, Vector2 direction, float speed);
     ~plate();
     Vector2 getPos();
     Vector2 getDirection();
     std::list<Vector2>& getHull();
-    void regenBoundingBox();
+    heightMesh * getMesh();
+
+    Vector2 regenBoundingBox();
+    void initHeightMesh(int depth);
 
     // collision checkers
     bool selfSATCollisionCheck(plate * Collision);
@@ -45,6 +46,7 @@ public:
     void movePlate();
     void movePlateWrapped(int wrap_x, int wrap_y);
 
+
     void AngleFilter();
 
     void DeformBackfill();
@@ -52,16 +54,10 @@ public:
     void setPos(Vector2 pos);
     void setPixel(int x, int y);
     void render(int pos_x, int pos_y);
-
-
-    // static functions
-
-    static void deform(plate * self, plate * other);
 };
 
 // initialises the plate with global pos
-plate::plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed){
-    this->localMap = localMap;
+plate::plate(Vector2 globalPos, Vector2 direction, float speed){
     this->globalPos = globalPos;
     this->color = (Color){
         .r = (unsigned char)(rand()%256),
@@ -76,8 +72,6 @@ plate::plate(Image localMap, Vector2 globalPos, Vector2 direction, float speed){
 
 plate::~plate(){
     printf("closing plate\n");
-    UnloadImage(this->localMap);
-    UnloadTexture(mapTexture);
 }
 
 
@@ -96,9 +90,14 @@ std::list<Vector2>& plate::getHull(){
     return this->hull;
 }
 
+heightMesh * plate::getMesh(){
+    return &this->mesh;
+}
+
 // Generate bounding box
-void plate::regenBoundingBox(){
+Vector2 plate::regenBoundingBox(){
     Vector2 TempOffset;
+    Rectangle tempBox = this->boundingBox;
 
     this->boundingBox = {
         this->hull.front().x,
@@ -129,9 +128,13 @@ void plate::regenBoundingBox(){
         v1.y -= TempOffset.y;
     }
 
+    return {boundingBox.x/tempBox.x,boundingBox.y/tempBox.y};
 }
 
 
+void plate::initHeightMesh(int depth){
+    this->mesh.initMesh(depth, hull);
+}
 
 
 // Separating Axis Theorem check
@@ -333,21 +336,25 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
         // printf("DEBUG AD_1 COLLISION DEFORM %f,%f \n", selfNewPoint[i].x + this->getPos().x, selfNewPoint[i].y + this->getPos().y);
 
         this->hull.insert(selfNextPointPtr[i],selfNewPoint[i]);
-    }
-
-    // inseting the vertices
-    for(int i = 0; i < otherNewPoint.size(); i++){
-        // adds it to both hulls
-        // printf("DEBUG AD_2 COLLISION DEFORM %f,%f \n", otherNewPoint[i].x + Collision->getPos().x, otherNewPoint[i].y + Collision->getPos().y);
+        // propogateDeform
+        // this->getMesh()->
 
         Collision->hull.insert(otherNextPointPtr[i],otherNewPoint[i]);
     }
 
+    // inseting the vertices
+    // for(int i = 0; i < otherNewPoint.size(); i++){
+    //     // adds it to both hulls
+    //     // printf("DEBUG AD_2 COLLISION DEFORM %f,%f \n", otherNewPoint[i].x + Collision->getPos().x, otherNewPoint[i].y + Collision->getPos().y);
+
+        
+    // }
+
     internalVertTest(this, Collision, Offset, otherNewPoint);
     internalVertTest(Collision, this, Offset, selfNewPoint);
 
-    VertDistFilter(this,speed*2);
-    VertDistFilter(Collision,speed*2);
+    VertDistFilter(this,speed*3);
+    VertDistFilter(Collision,speed*3);
 
     VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     VertAngleFilter(Collision, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
@@ -856,28 +863,17 @@ void plate::setPos(Vector2 pos){
     this->globalPos = pos;
 }
 
-void plate::setPixel(int x, int y){
-    int pixel_x = (x - (int)this->globalPos.x + (this->localMap.width/2)  + this->localMap.width) % (int)(this->localMap.width);
-    int pixel_y = (y - (int)this->globalPos.y + (this->localMap.height/2) + this->localMap.height) % (int)(this->localMap.height);
-    ImageDrawPixel(&this->localMap,
-    pixel_x, 
-    pixel_y,
-    this->color);
-
-    
-
-    // ImageDrawPixel(&this->localMap,x,y,this->color);
-}
-
 // renders the plate
 void plate::render(int pos_x, int pos_y){
-    ImageClearBackground(&this->localMap, BLACK);
-    UnloadTexture(mapTexture);
-    // ImageDrawCircle(&this->localMap, 5,5,10,RED);
-    ImageDrawCircle(&this->localMap, this->localMap.width/2,this->localMap.height/2,3,BLUE);
-    ImageDrawLine(&this->localMap, this->localMap.width/2,this->localMap.height/2,direction.x*50 + this->localMap.width/2,direction.y*50 + this->localMap.height/2,PINK);
-    ImageDrawText(&this->localMap,std::to_string(this->hull.size()).c_str(), this->localMap.width/2,this->localMap.height/2,15,color);
-    // ImageDrawRectangleLines(&this->localMap,{this->boundingBox.x + this->localMap.width/2,this->boundingBox.y + this->localMap.height/2, this->boundingBox.width - this->boundingBox.x, this->boundingBox.height - this->boundingBox.y},1,DebugRect);
+    int offset_x = globalPos.x + pos_x;
+    int offset_y = globalPos.y + pos_y;
+
+
+    DrawCircle(offset_x,offset_y,3,BLUE);
+    DrawLine(offset_x,offset_y,direction.x*50 + offset_x,direction.y*50 + offset_y,PINK);
+    DrawText(std::to_string(this->hull.size()).c_str(), offset_x,offset_y,15,color);
+    // DrawRectangleLines({this->boundingBox.x + offset_x,this->boundingBox.y + offset_y, this->boundingBox.width - this->boundingBox.x, this->boundingBox.height - this->boundingBox.y},1,DebugRect);
+
 
     int i = 0;
     Vector2 vp = this->hull.back();
@@ -889,38 +885,19 @@ void plate::render(int pos_x, int pos_y){
 
         Color edgeColor = dir > 0? GREEN:RED;
 
-        ImageDrawLine(&this->localMap, vp.x + this->localMap.width/2,vp.y + this->localMap.height/2,v.x + this->localMap.width/2,v.y + this->localMap.height/2,edgeColor);
+        DrawLine(vp.x + offset_x,vp.y + offset_y,v.x + offset_x,v.y + offset_y,edgeColor);
+        DrawLine(offset_x,offset_y,v.x + offset_x,v.y + offset_y,PURPLE);
         
         
         
-        ImageDrawCircle(&this->localMap, v.x + this->localMap.width/2,v.y + this->localMap.height/2,5,GREEN);
-        ImageDrawText(&this->localMap,std::to_string(i).c_str(), v.x + 10 + this->localMap.width/2,v.y + 10 + this->localMap.height/2,15,color);
-        // ImageDrawText(&this->localMap,std::to_string((int)round(v.x)).c_str(), v.x + 10 + this->localMap.width/2,v.y + 20 + this->localMap.height/2,15,WHITE);
+        DrawCircle(v.x + offset_x,v.y + offset_y,5,GREEN);
+        DrawText(std::to_string(i).c_str(), v.x + 10 + offset_x,v.y + 10 + offset_y,15,color);
+        // DrawText(std::to_string((int)round(v.x)).c_str(), v.x + 10 + offset_x,v.y + 20 + offset_y,15,WHITE);
         
         vp = v;
     }
     
-
-    int lx[9] = {-1, 0, 1, 1, 1, 0,-1,-1,-1};
-    int ly[9] = {-1,-1,-1, 0, 1, 1, 1, 0,-1};
-
-    i = 0;
-    // for(Vector2 v : this->mpoints){
-    //     i++;
-    //     // printf("%d,%d\n",v.x,v.y);
-    //     std::ostringstream temp;
-    //     temp << lx[i] << ":" << ly[i];
-    //     ImageDrawCircle(&this->localMap, v.x + this->localMap.width/2,v.y + this->localMap.height/2,5,RED);
-    //     ImageDrawText(&this->localMap, temp.str().c_str(), v.x + 10 + this->localMap.width/2,v.y + 10 + this->localMap.height/2,15,WHITE);
-    // }
-
-
-    mapTexture = LoadTextureFromImage(this->localMap);
-    // printf("REN %f:%d,, %f:%d\n",pos.x,pos_x,pos.y,pos_y);
-    DrawTexture(mapTexture,
-    globalPos.x + pos_x - this->localMap.width/2,
-    globalPos.y + pos_y - this->localMap.height/2, 
-    WHITE);    
+    mesh.render(getPos()); 
 }
 
 #endif

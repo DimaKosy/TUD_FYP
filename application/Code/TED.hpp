@@ -15,6 +15,7 @@ int GLOBAL_FLAG = 0;
 #include <algorithm>
 
 #include "collisionFunctions.cpp"
+#include "heightMesh.cpp"
 #include "plate.cpp"
 #include "gridCell.cpp"
 #include "infiniteWorld.cpp"

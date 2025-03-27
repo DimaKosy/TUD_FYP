@@ -25,17 +25,17 @@ int main(int argc, char ** arg){
 
     
     Vector2 exclude2[] = {
-        {1,0},
-        // {1,1},
+        // {1,0},
+        {1,1},
         // {2,0},
         // {2,1},
         {0,1},
-        {0,0}
+        // {0,0}
     };
-    // World.purge_grids_demo(exclude2, sizeof(exclude2) / sizeof(exclude2[0]));   
+    World.purge_grids_demo(exclude2, sizeof(exclude2) / sizeof(exclude2[0]));   
 
 
-    plate * followPlate = World.getGridCell(0,0)->getPlates().front();
+    plate * followPlate = World.getGridCell(1,1)->getPlates().front();
     
     // for(int i = 0; i < 17; i++){
     //     World.moveStepPlates();
