@@ -64,50 +64,6 @@ void heightMesh::initMesh(int depth, std::list<Vector2> hull){
 heightMesh::~heightMesh(){
 }
 
-void heightMesh::stretchDeform(Vector2 Direction, Vector2 Boundary){
-
-    // Vector3 Line = getLineEquation(Direction,{0,0});
-
-    float max = 0;
-    
-    for(int i = 0; i < depth; i++){
-
-        for(int j = 0; j < width; j++){
-
-            float side = crossproduct(
-                {Direction.y,-Direction.x},
-                {0,0},
-                {meshPoints[i][j].x,meshPoints[i][j].y}
-            );
-            
-            max = std::max(max, abs(side));
-        }
-    }
-    
-
-    for(int i = 0; i < depth; i++){
-
-        for(int j = 0; j < width; j++){
-
-            float side = crossproduct(
-                {Direction.y,-Direction.x},
-                {0,0},
-                {meshPoints[i][j].x,meshPoints[i][j].y}
-            );
-
-            if(side < 0){
-                meshPoints[i][j].x -= (side/max) * Direction.x;
-                meshPoints[i][j].y -= (side/max) * Direction.y;
-            }
-            if(side > 0){
-                meshPoints[i][j].x -= (side/max) * Direction.x;
-                meshPoints[i][j].y -= (side/max) * Direction.y;
-            }
-        }
-
-        
-    }
-}
 
 void heightMesh::propogateDeform(Vector2 Origin, Vector2 Direction, float force){
     //get distance to origin 
@@ -169,42 +125,6 @@ void heightMesh::propogateDeform(Vector2 Origin, Vector2 Direction, float force)
         
     }
 
-
-
-    
-
-    // //use closest points to propogsate deform
-    // for(int i = 0; i < depth; i++){//deform originator line
-    //     float force_m = force*((depth-i)/(float)depth);
-    //     meshPoints[i][originIndex].x += Direction.x * force_m;
-    //     meshPoints[i][originIndex].y += Direction.y * force_m;
-    //     meshPoints[i][originIndex].z += force_m;
-    // }
-
-    // for(int d = 1; d < depth && d < width/2; d++){
-        
-    //     // left propogration
-    //     // meshPoints[0][(width + originIndex - d)%width];
-    //     // right propogration
-    //     // meshPoints[0][(originIndex + d)%width];
-
-    //     for(int w = 0; w + d < depth; w++){
-    //         // left propogration
-    //         float force_m = force*((depth-(w+d))/(float)depth);
-
-    //         printf("FORCE %f, %d, %d\n", force_m,depth, (w+d));
-    //         meshPoints[w][(width + originIndex - d)%width].x += Direction.x * force_m;
-    //         meshPoints[w][(width + originIndex - d)%width].y += Direction.y * force_m;
-    //         meshPoints[w][(width + originIndex - d)%width].z += force_m;
-    //         // right propogration
-
-    //         meshPoints[w][(originIndex + d)%width].x += Direction.x * force_m;
-    //         meshPoints[w][(originIndex + d)%width].y += Direction.y * force_m;
-    //         meshPoints[w][(originIndex + d)%width].z += force_m;
-    //     }
-    //     // propbably easier to do recursively.....
-    // }
-    // // propogations slows to 0%~ at max depth
 }
 
 void heightMesh::render(Vector2 offset){
