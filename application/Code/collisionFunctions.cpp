@@ -71,6 +71,22 @@ Vector2 getIntersector(Vector3 p1, Vector3 p2){
     };
 }
 
+Vector2 getLineIntersector(Vector3 A, Vector3 B){
+
+    
+    float det = A.x * B.y - B.x * A.y;
+
+    if (std::abs(det) <= 1e-9) {
+        // Lines are parallel
+        // printf("FAILED INTERSECT\n");
+        return (Vector2){NAN, NAN};
+    }
+    return (Vector2){
+        (A.y * B.z - B.y * A.z) / det,
+        (B.x * A.z - A.x * B.z) / det
+    };
+}
+
 float angleBetween(Vector2 A, Vector2 B, Vector2 C){
     Vector2 u = {A.x - B.x, A.y - B.y};
     Vector2 v = {C.x - B.x, C.y - B.y};

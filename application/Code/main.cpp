@@ -1,6 +1,6 @@
 #include "TED.hpp"
 
-#define P_N 4
+#define P_N 2
 #define CAM_SPEED 500
 
 
@@ -24,20 +24,21 @@ int main(int argc, char ** arg){
 
 
     
-    Vector2 exclude2[] = {
-        // {1,0},
+    Vector2 exclude[] = {
         {1,1},
-        // {2,0},
-        // {2,1},
+        {1,0},
+        // {1,0},
+        // {0,1},
         {0,1},
-        // {0,0}
+        // {P_N-1,0},
+        // {P_N-1,P_N-1}
     };
-    World.purge_grids_demo(exclude2, sizeof(exclude2) / sizeof(exclude2[0]));   
+    // World.purge_grids_demo(exclude, sizeof(exclude) / sizeof(exclude[0]));   
 
 
-    plate * followPlate = World.getGridCell(1,1)->getPlates().front();
+    plate * followPlate = World.getGridCell(exclude[0].x,exclude[0].y)->getPlates().front();
     
-    // for(int i = 0; i < 17; i++){
+    // for(int i = 0; i < 31; i++){
     //     World.moveStepPlates();
     //     World.updatePlatePositions();
     //     TimeStep++;
@@ -106,7 +107,7 @@ int main(int argc, char ** arg){
 
             mouseColor = followPlate->internalTest(GetMousePosition())? RED:GREEN;
 
-            DrawCircle(GetMousePosition().x, GetMousePosition().y,15, mouseColor);
+            // DrawCircle(GetMousePosition().x, GetMousePosition().y,15, mouseColor);
             // DrawText("Congrats! You created your first window!", 190, 200, 20, LIGHTGRAY);
 
         EndDrawing();

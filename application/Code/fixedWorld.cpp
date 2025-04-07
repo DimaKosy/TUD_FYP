@@ -5,7 +5,7 @@
 #define MAX_SPEED 2
 #define DEPTH 3
 #define PH_COUNT 8
-#define COL_SEARCH_RAD 2
+#define COL_SEARCH_RAD 1
 
 class fixedWorld{
 private:
@@ -128,13 +128,14 @@ void fixedWorld::initPlateHull(){
     int lx[9] = {-1, 0, 1, 1, 1, 0,-1,-1,-1};
     int ly[9] = {-1,-1,-1, 0, 1, 1, 1, 0,-1};
 
+    // loop through every grid cell
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
-            // printf("GRID %d:%d\n",x,y);
-            plate *p = grid[x][y]->getPlates().front();
-            Vector3 pb_array[9];
+            
+            plate *p = grid[x][y]->getPlates().front(); //get the plate from the grid cell
+            Vector3 pb_array[8];    //array to hold perpindicular bisectors
 
-            for(int l = 0; l < PH_COUNT; l++){
+            for(int l = 0; l < PH_COUNT; l++){  //loops through the winding order
 
                 // gets offsets for wrapped points
                 int offset_x = (x + lx[l] == -1) ? -map_x : x + lx[l] == grid_x ? map_x : 0;
@@ -142,11 +143,11 @@ void fixedWorld::initPlateHull(){
 
                 plate *p2 = grid[(grid_x + x + lx[l])%grid_x][(grid_y + y + ly[l])%grid_y]->getPlates().front();
 
+                // printf("%f,%f :: %d,%d -> %d,%d:: %f,%f\n",p->getPos().x,p->getPos().y, x,y,x + lx[l], y + ly[l], p2->getPos().x + offset_x, p2->getPos().y + offset_y);
+
                 pb_array[l] = getPerpindicularBisector(p->getPos(), (Vector2){p2->getPos().x + offset_x, p2->getPos().y + offset_y});
 
-
-                float mx = (p->getPos().x + p2->getPos().x + offset_x) / 2.0;
-                float my = (p->getPos().y + p2->getPos().y + offset_y) / 2.0;
+                // printf("(%f,%f,%f)\n\n",pb_array[l].x,pb_array[l].y,pb_array[l].z);
             }
 
             for(int i = 0; i < PH_COUNT; i++){
@@ -187,6 +188,8 @@ void fixedWorld::initPlateHull(){
                 // res = d1 < d2 ? i1 : i2;
             
                 // printf("OUT %f:%f\n",res.x, res.y);
+
+                // Adjust result relative to plate position 
                 res = {res.x - p->getPos().x, res.y - p->getPos().y};
                 
                 bool temp_skipper = false;
@@ -201,16 +204,23 @@ void fixedWorld::initPlateHull(){
                 }
                 
             }
+
+            // for(auto h : p->getHull()){
+            //     printf("(%f,%f),",h.x,h.y);
+            // }
+            // printf("\b \n\n");
         }
     }
+
+    // exit(-1);
 
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
             gridCell * pts = grid[x][y];
             for(plate * pt : pts->getPlates()){
                 // printf("REGENBOUND %d, %d\n",x,y);
-                pt->regenBoundingBox();
-                pt->regenBoundingBox();
+                pt->regenBoundingBox(map_x, map_y);
+                pt->regenBoundingBox(map_x, map_y);
                 pt->initHeightMesh(DEPTH);
             }
         }
@@ -244,11 +254,10 @@ void fixedWorld::moveStepPlates(){
 
             for(plate * p : pt->getPlates()){
 
-                // for(auto v:p->getHull()){
-                //     printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
-                // }
-    
-                // printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
+                ///*DEBUG*/for(auto v:p->getHull()){
+                ///*DEBUG*/    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
+                ///*DEBUG*/}
+                ///*DEBUG*/printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
 
 
 
@@ -257,11 +266,15 @@ void fixedWorld::moveStepPlates(){
                 p->DeformBackfill();
                 // p->AngleFilter();
                 p->DebugRect = GREEN;
-                Vector2 temp = p->regenBoundingBox();
-                p->getMesh()->stretchDeform({
-                    temp.x,
-                    temp.y
-                });
+                Vector2 temp = p->regenBoundingBox(map_x, map_y);
+                
+                // /*DEBUG*/printf("\nPOST MOVE\n");
+                /*DEBUG*/printf("\n");
+                /*DEBUG*/for(auto v:p->getHull()){
+                /*DEBUG*/    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
+                /*DEBUG*/}
+                /*DEBUG*/printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
+            
             }
         }
     }
@@ -292,6 +305,10 @@ void fixedWorld::moveStepPlates(){
                                 continue;
                             }
 
+                            // printf("%d,%d -> %d,%d :: %f,%f\n", x, y, x + x1, y + y1, offset.x, offset.y);
+                            
+
+
                             // printf("OFFSET %f,%f\n",offset.x, offset.y);
                             // p->selfCollisionCheck(p1);
                             if(p->selfAABBCollisionCheck(p1, offset)){
@@ -312,28 +329,8 @@ void fixedWorld::moveStepPlates(){
             }
         }
     }
+    
 
-    // for(int x = 0; x < grid_x; x++){
-    //     for(int y = 0; y < grid_y; y++){
-
-    //         gridCell * pt = grid[x][y];
-
-    //         for(plate * p : pt->getPlates()){
-    //             Vector2 v = p->getPos();
-    //             // p->movePlateWrapped(map_x, map_y);
-
-    //             for(int x1 = -COL_SEARCH_RAD; x1 <= COL_SEARCH_RAD; x1++){
-    //                 for(int y1 = -COL_SEARCH_RAD; y1 <= COL_SEARCH_RAD; y1++){
-    //                     gridCell * pt1 = grid[(grid_x + x + x1) % grid_x][(grid_y + y + y1) % grid_y];
-
-
-    //                     for(plate * p1 : pt1->getPlates()){
-    //                     }
-    //                 }
-    //             }
-    //         }
-    //     }
-    // }
 }
 
 void fixedWorld::moveAllPlates(Vector2 pos){

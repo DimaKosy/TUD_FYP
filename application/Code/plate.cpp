@@ -1,10 +1,10 @@
 #ifndef PLATE_C
 #define PLATE_C
 #include "TED.hpp"
-#define MIN_ANG 3.0
-#define MAX_ANG 177.0
+#define MIN_ANG 10.0
+#define MAX_ANG 170.0
 #define MAX_DISTANCE 1
-#define ERROR_MARG 0.01
+#define ERROR_MARG 1
 
 class plate{
 private:
@@ -17,6 +17,7 @@ private:
     void internalVertTest_deprecated(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr, Vector2 Offset);
     void internalVertTest_deprecated2(plate * primary, plate * secondary, Vector2 Offset);
     void internalVertTest(plate * primary, plate * secondary, Vector2 Offset, std::vector<Vector2> ignore);
+    void VertRayTest(Vector2 Vertex, plate * primary, plate * secondary,  Vector2 Offset);
     void VertAngleFilter(plate * primary, double min_angle, double max_angle);
     void VertDistFilter(plate * primary, double min_distance);
     void SplitConcavePlate();
@@ -32,9 +33,10 @@ public:
     Vector2 getPos();
     Vector2 getDirection();
     std::list<Vector2>& getHull();
+    Rectangle getBoundingBox();
     heightMesh * getMesh();
 
-    Vector2 regenBoundingBox();
+    Vector2 regenBoundingBox(int maxWidth, int maxHeight);
     void initHeightMesh(int depth);
 
     // collision checkers
@@ -90,12 +92,16 @@ std::list<Vector2>& plate::getHull(){
     return this->hull;
 }
 
+Rectangle plate::getBoundingBox(){
+    return this->boundingBox;
+}
+
 heightMesh * plate::getMesh(){
     return &this->mesh;
 }
 
 // Generate bounding box
-Vector2 plate::regenBoundingBox(){
+Vector2 plate::regenBoundingBox(int maxWidth, int maxHeight){
     Vector2 TempOffset;
     Rectangle tempBox = this->boundingBox;
 
@@ -122,6 +128,9 @@ Vector2 plate::regenBoundingBox(){
     // printf("RGBB%f:%f\n\n", TempOffset.x, TempOffset.y);
     this->globalPos.x += TempOffset.x;
     this->globalPos.y += TempOffset.y;
+    
+    this->globalPos.x = fmod(maxWidth + this->globalPos.x,maxWidth);
+    this->globalPos.y = fmod(maxHeight + this->globalPos.y,maxHeight);
 
     for(Vector2 &v1: this->hull){
         v1.x -= TempOffset.x;
@@ -255,6 +264,7 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     
 
     // check for edge intersections
+    // printf("\nNEW SET\n");
     for(auto v1 = this->hull.begin(); v1 != this->hull.end(); ++v1){
 
         std::list<Vector2>::iterator v2 = v1;
@@ -277,45 +287,61 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
             }
 
 
-            o_v1 = (Vector2){v3->x + Collision->getPos().x + Offset.x, v3->y + Collision->getPos().y + Offset.y};
-            o_v2 = (Vector2){v4->x + Collision->getPos().x + Offset.x, v4->y + Collision->getPos().y + Offset.y};
+            o_v1 = (Vector2){v3->x + Collision->getPos().x +Offset.x, v3->y + Collision->getPos().y + Offset.y};
+            o_v2 = (Vector2){v4->x + Collision->getPos().x +Offset.x, v4->y + Collision->getPos().y + Offset.y};
 
             o_lv = getLineEquation(o_v1,o_v2);
 
+            
+
             // printf("Failing %f,%f,%f => %f,%f,%f \n",s_lv.x,s_lv.y,s_lv.z, o_lv.x, o_lv.y, o_lv.z);
 
-            Vector2 intersection = getIntersector(s_lv,o_lv);
+            Vector2 intersection = getLineIntersector(s_lv,o_lv);
+
+            
 
             if(std::isnan(intersection.x)){
+                ///*DEBUG*/printf("NAN INTERSECT (%f,%f),(%f,%f)\n(%f,%f),(%f,%f)\n",s_v1.x,s_v1.y,s_v2.x,s_v2.y,o_v1.x, o_v1.y, o_v2.x, o_v2.y);
                 continue;
             }
 
-            intersection.x = -intersection.x;
-            intersection.y = -intersection.y;
+
+            ///*DEBUG*/printf("INT ATP (%f,%f),(%f,%f)\n(%f,%f),(%f,%f)\n",s_v1.x,s_v1.y,s_v2.x,s_v2.y,o_v1.x, o_v1.y, o_v2.x, o_v2.y);
+            ///*DEBUG*/printf("INT (%f,%f)\n",intersection.x,intersection.y);
 
             if( //checks if the intersection is within the line segment
-                intersection.x >= std::min(s_v1.x, s_v2.x) - ERROR_MARG && intersection.x <= std::max(s_v1.x, s_v2.x) + ERROR_MARG &&
-                intersection.y >= std::min(s_v1.y, s_v2.y) - ERROR_MARG && intersection.y <= std::max(s_v1.y, s_v2.y) + ERROR_MARG &&
-                intersection.x >= std::min(o_v1.x, o_v2.x) - ERROR_MARG && intersection.x <= std::max(o_v1.x, o_v2.x) + ERROR_MARG &&
-                intersection.y >= std::min(o_v1.y, o_v2.y) - ERROR_MARG && intersection.y <= std::max(o_v1.y, o_v2.y) + ERROR_MARG
+                intersection.x >= std::min(s_v1.x, s_v2.x) -0.1f && intersection.x <= std::max(s_v1.x, s_v2.x) + 0.1f &&
+                intersection.y >= std::min(s_v1.y, s_v2.y) -0.1f && intersection.y <= std::max(s_v1.y, s_v2.y) + 0.1f &&
+                intersection.x >= std::min(o_v1.x, o_v2.x) -0.1f && intersection.x <= std::max(o_v1.x, o_v2.x) + 0.1f &&
+                intersection.y >= std::min(o_v1.y, o_v2.y) -0.1f && intersection.y <= std::max(o_v1.y, o_v2.y) + 0.1f
             ){
                 //adds it to a queue to be added
+                ///*DEBUG*/printf("(%f,%f),(%f,%f)\n(%f,%f),(%f,%f)\n",s_v1.x,s_v1.y,s_v2.x,s_v2.y, o_v1.x,o_v1.y,o_v2.x,o_v2.y);
+                ///*DEBUG*/printf("INT %f,%f\n",intersection.x,intersection.y);
 
                 Vector2 momentum = {
-                    ((this->getDirection().x * this->speed) - (Collision->getDirection().x * Collision->speed))/2,
-                    ((this->getDirection().y * this->speed) - (Collision->getDirection().y * Collision->speed))/2
+                    0,//((this->getDirection().x * this->speed) - (Collision->getDirection().x * Collision->speed))/2,
+                    0//((this->getDirection().y * this->speed) - (Collision->getDirection().y * Collision->speed))/2
                 };
-                selfNewPoint.push_back((Vector2){
-                        intersection.x - this->getPos().x - momentum.x,
-                        intersection.y - this->getPos().y - momentum.y
-                    });
+                Vector2 temp = {
+                    intersection.x - this->getPos().x - momentum.x,
+                    intersection.y - this->getPos().y - momentum.y
+                };
+                selfNewPoint.push_back(temp);
+                
+                // this->getMesh()->propogateDeform(temp, momentum, 0.5);
+
                 selfPrePointPtr.push_back(v1);
                 selfNextPointPtr.push_back(v2);
 
-                otherNewPoint.push_back((Vector2){
+                temp = {
                     intersection.x - Collision->getPos().x - Offset.x - momentum.x,
                     intersection.y - Collision->getPos().y - Offset.y - momentum.y
-                });
+                };
+
+                otherNewPoint.push_back(temp);
+
+                // Collision->getMesh()->propogateDeform(temp, momentum, 0.5);
                 
                 otherPrePointPtr.push_back(v3);
                 otherNextPointPtr.push_back(v4);
@@ -333,32 +359,46 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     // inseting the vertices
     for(int i = 0; i < selfNewPoint.size(); i++){
         // adds it to both hulls
-        // printf("DEBUG AD_1 COLLISION DEFORM %f,%f \n", selfNewPoint[i].x + this->getPos().x, selfNewPoint[i].y + this->getPos().y);
+        ///*DEBUG*/printf("DEBUG AD_1 COLLISION DEFORM %f,%f \n", selfNewPoint[i].x + this->getPos().x, selfNewPoint[i].y + this->getPos().y);
 
         this->hull.insert(selfNextPointPtr[i],selfNewPoint[i]);
-        // propogateDeform
-        // this->getMesh()->
-
-        Collision->hull.insert(otherNextPointPtr[i],otherNewPoint[i]);
+        // VertRayTest(*selfNextPointPtr[i],this, Collision, Offset);
+        // VertRayTest(*selfPrePointPtr[i], this, Collision, Offset);
     }
 
     // inseting the vertices
-    // for(int i = 0; i < otherNewPoint.size(); i++){
-    //     // adds it to both hulls
-    //     // printf("DEBUG AD_2 COLLISION DEFORM %f,%f \n", otherNewPoint[i].x + Collision->getPos().x, otherNewPoint[i].y + Collision->getPos().y);
+    for(int i = 0; i < otherNewPoint.size(); i++){
+        // adds it to both hulls
+        ///*DEBUG*/printf("DEBUG AD_2 COLLISION DEFORM %f,%f \n", otherNewPoint[i].x + Collision->getPos().x, otherNewPoint[i].y + Collision->getPos().y);
+        Collision->hull.insert(otherNextPointPtr[i],otherNewPoint[i]);
 
-        
-    // }
+        // VertRayTest(*otherNextPointPtr[i], Collision, this, {-Offset.x,-Offset.y});
+        // VertRayTest(*otherPrePointPtr[i],  Collision, this, {-Offset.x,-Offset.y});
+    }
+
+    ///*DEBUG*/printf("PREFILTER\n");
+    ///*DEBUG*/for(auto v:this->getHull()){
+    ///*DEBUG*/    printf("(%f,%f),",v.x + this->getPos().x,v.y + this->getPos().y);
+    ///*DEBUG*/}
+    ///*DEBUG*/printf("(%f,%f)\n", this->getHull().front().x  + this->getPos().x, this->getHull().front().y  + this->getPos().y);
+
+
+    ///*DEBUG*/for(auto v:Collision->getHull()){
+    ///*DEBUG*/    printf("(%f,%f),",v.x + Collision->getPos().x,v.y + Collision->getPos().y);
+    ///*DEBUG*/}
+    ///*DEBUG*/printf("(%f,%f)\n", Collision->getHull().front().x  + Collision->getPos().x, Collision->getHull().front().y  + Collision->getPos().y);
+
 
     internalVertTest(this, Collision, Offset, otherNewPoint);
-    internalVertTest(Collision, this, Offset, selfNewPoint);
+    internalVertTest(Collision, this, {-Offset.x,-Offset.y}, selfNewPoint);
 
-    VertDistFilter(this,speed*3);
-    VertDistFilter(Collision,speed*3);
+
 
     VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     VertAngleFilter(Collision, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     
+    VertDistFilter(this,1);
+    VertDistFilter(Collision,1);    
     
 
     // printf("H1\t");
@@ -366,9 +406,6 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     // printf("H2\t");
     Collision->SplitConcavePlate();
     
-
-    
-
     
     // safety clear
     selfNewPoint.clear();
@@ -378,158 +415,18 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     otherPrePointPtr.clear();
     otherNextPointPtr.clear();
 
-}
+    // printf("\n");
 
-void plate::internalVertTest_deprecated(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr, Vector2 Offset){
-    for(auto v1 = primary->hull.begin(); v1 != primary->hull.end(); ++v1){
-        std::vector<std::list<Vector2>::iterator> keep_pre; // vector for vertices that are to be kept
-        std::vector<std::list<Vector2>::iterator> keep_next; // vector for vertices that are to be kept
-        
-        std::list<Vector2>::iterator v2 = v1;
-        ++v2;
-        if(v2 == primary->hull.end()){    // Wrap around to the first element
-            v2 = primary->hull.begin(); 
-        }
-
-        // global position for vectors
-        Vector2 s_v1 = (Vector2){v1->x + primary->getPos().x, v1->y + primary->getPos().y};
-        Vector2 s_v2 = (Vector2){v2->x + primary->getPos().x, v2->y + primary->getPos().y};
-
-        // printf("(%f,%f),", s_v1.x, s_v1.y);
-
-        for(auto v3 : *PrePointPtr){
-            // global position for vector
-            Vector2 s_v3 = (Vector2){v3->x + secondary->getPos().x + Offset.x, v3->y + secondary->getPos().y + Offset.y};
-
-            float crossvalue = crossproduct(s_v1,s_v2,s_v3);
-
-            // checks if its left or right
-            if(crossvalue < -5){
-                keep_pre.push_back(v3);
-            }
-        }
-
-        // remove vertices that are being kept
-        for(auto k: keep_next){
-            auto purge_node = std::find(nextPointPtr->begin(), nextPointPtr->end(), k);
-            if (purge_node != nextPointPtr->end()) {
-                
-                nextPointPtr->erase(purge_node);
-            }
-        }
-
-        for(auto v3 : *nextPointPtr){
-            Vector2 s_v3 = (Vector2){v3->x + secondary->getPos().x + Offset.x, v3->y + secondary->getPos().y + Offset.y};
-
-            float crossvalue = crossproduct(s_v1,s_v2,s_v3);
-
-            if(crossvalue < 0){
-                keep_next.push_back(v3);
-            }
-        }
-
-        // remove vertices that are being kept
-        for(auto k: keep_pre){
-            auto purge_node = std::find(PrePointPtr->begin(), PrePointPtr->end(), k);
-            if (purge_node != PrePointPtr->end()) {
-                
-                PrePointPtr->erase(purge_node);
-            }
-        }
-
-        for(auto k: keep_next){
-            auto purge_node = std::find(nextPointPtr->begin(), nextPointPtr->end(), k);
-            if (purge_node != nextPointPtr->end()) {
-                
-                nextPointPtr->erase(purge_node);
-            }
-        }
-    }
-
-
-    for(auto ptr : *PrePointPtr){
-        for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
-            if (h->x == ptr->x && h->y == ptr->y) {  
-                // printf("erasing pre %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
-                h = secondary->hull.erase(h);  // Use returned iterator
-            } else {
-                ++h;  // Only increment if not erased
-            }
-        }
-    }
-    for(auto ptr : *nextPointPtr){
-        for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
-            if (h->x == ptr->x && h->y == ptr->y) {  
-                // printf("erasing next %f,%f ", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
-                h = secondary->hull.erase(h);  // Use returned iterator
-            } else {
-                ++h;  // Only increment if not erased
-            }
-        }
-    }
-}
-
-void plate::internalVertTest_deprecated2(plate * primary, plate * secondary, Vector2 Offset){
-    std::list<std::list<Vector2>::iterator> removeList;
-    bool erased = false;
-
-    // adds all the vertices to the remove list
-    for (auto h = secondary->hull.begin(); h != secondary->hull.end(); ++h) {
-        removeList.push_back(h);
-    }
-
-    // loops through remove list
-    for(auto r = removeList.begin(); r != removeList.end();){
-        erased = false;
-
-        // loops through all hull vertices
-        for(auto p_vc = primary->hull.begin(); p_vc != primary->hull.end(); ++p_vc){
-            auto p_vn = std::next(p_vc); //next
-
-            if(p_vn == primary->hull.end()){
-                p_vn = primary->hull.begin();
-            }
-
-            // gets the global position of vertices
-            Vector2 global_primary_vertice1 = (Vector2){p_vc->x + primary->getPos().x, p_vc->y + primary->getPos().y};
-            Vector2 global_primary_vertice2 = (Vector2){p_vn->x + primary->getPos().x, p_vn->y + primary->getPos().y};
-            Vector2 global_secondary_vertice = (Vector2){(*(*r)).x + secondary->getPos().x + Offset.x, (*(*r)).y + secondary->getPos().y + Offset.y};
-
-            // gets the crossproduct 
-            float crossvalue = crossproduct(global_primary_vertice1,global_primary_vertice2,global_secondary_vertice);
-
-            // checks if its left or right of the line
-            if(crossvalue < 0){ //removes if its to the right
-                r = removeList.erase(r);    //returns pointer to the next element if erased
-                erased = true;
-                break;
-            }
-
-        }
-        
-
-        if(!erased){    //increments if nothing was erased
-            ++r;
-        }
-    }
-
-    // printf("\b \n");
-    for(auto r : removeList){
-        // printf("NR (%f,%f)\n",(*r).x + secondary->getPos().x, (*r).y + secondary->getPos().y);
-        for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
-            if (h == r) {  
-
-                // printf("DEBUG RM INTERNAL_VERT %f,%f \n", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
-                h = secondary->hull.erase(h);  // Use returned iterator
-            } else {
-                ++h;  // Only increment if not erased
-            }
-        }
-    }
 }
 
 void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset, std::vector<Vector2> ignore){
     std::list<std::list<Vector2>::iterator> removeList;
+
+    ///*DEBUG*/printf("IGNORE LIST");
+    ///*DEBUG*/for(auto v: ignore){
+    ///*DEBUG*/    printf("(%f,%f),",v.x,v.y);
+    ///*DEBUG*/}
+    ///*DEBUG*/printf("\b \n\n");
 
     // adds all the vertices to the remove list
     for (auto h = secondary->hull.begin(); h != secondary->hull.end(); ++h) {
@@ -541,6 +438,14 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
                 break;
             }
         }
+
+        // for(auto v : primary->hull){
+        //     if(h->x == v.x && h->y == v.y){
+        //         found = true;
+        //         break;
+        //     }
+        // }
+
         if(!found){
             removeList.push_back(h);
         }
@@ -548,9 +453,32 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
 
     // loops through remove list
     for(auto r = removeList.begin(); r != removeList.end();){
+        Vector2 hp, hn;
         int intersections = 0;
 
+        for(auto h = secondary->getHull().begin(); h != secondary->getHull().end(); ++h){
+            if(*r == h){
+                if (h == secondary->getHull().begin()) {
+                    hp = *std::prev(secondary->getHull().end());
+                } else {
+                    hp = *std::prev(h);
+                }
+
+
+                if (std::next(h) == secondary->getHull().end()) {
+                    hn = *secondary->getHull().begin();
+                } else {
+                    hn = *std::next(h);
+                }
+
+                break;
+            }
+        }
+
         Vector2 global_secondary_vertice = (Vector2){(*(*r)).x + secondary->getPos().x + Offset.x, (*(*r)).y + secondary->getPos().y + Offset.y};
+
+        // printf("GSV %f,%f\n", global_secondary_vertice.x, global_secondary_vertice.y);
+
         Vector3 testingLine = getLineEquation(global_secondary_vertice,primary->getPos());
 
         // loops through all hull vertices
@@ -562,58 +490,39 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
             }
 
             // gets the global position of vertices
-            Vector2 global_primary_vertice1 = (Vector2){p_vc->x + primary->getPos().x, p_vc->y + primary->getPos().y};
-            Vector2 global_primary_vertice2 = (Vector2){p_vn->x + primary->getPos().x, p_vn->y + primary->getPos().y};
+            Vector2 global_primary_vertice1 = (Vector2){(p_vc->x) + primary->getPos().x, (p_vc->y) + primary->getPos().y};
+            Vector2 global_primary_vertice2 = (Vector2){(p_vn->x) + primary->getPos().x, (p_vn->y) + primary->getPos().y};
 
 
             Vector3 lineEdge = getLineEquation(global_primary_vertice1,global_primary_vertice2);
 
-            Vector2 intersect_point = getIntersector(testingLine, lineEdge);
-            // printf("%f:%f   ", intersect_point.x,intersect_point.y);
+            Vector2 intersect_point = getLineIntersector(testingLine, lineEdge);
+            // printf("%f:%f\n", intersect_point.x,intersect_point.y);
 
-            intersect_point.x = -intersect_point.x;
-            intersect_point.y = -intersect_point.y;
+            // intersect_point.x = -intersect_point.x;
+            // intersect_point.y = -intersect_point.y;
 
-            float crossvalue = crossproduct(global_primary_vertice1,global_primary_vertice2,global_secondary_vertice);
-
-
-            // if(crossvalue < 0){ //removes if its to the right
-
-            //     printf("crossvalue Passed %f,%f\t\t%d\n",global_secondary_vertice.x, global_secondary_vertice.y,intersections);
-            //     Vector3 perBisector = getPerpindicularBisector(global_primary_vertice1, global_primary_vertice2);
-
-            //     Vector3 LTP_1 = getPerpLineThroughPoint(perBisector, global_primary_vertice1);
-            //     Vector3 LTP_2 = getPerpLineThroughPoint(perBisector, global_primary_vertice2);
-            //     Vector3 LTP_3 = getPerpLineThroughPoint(perBisector, global_secondary_vertice);
-
-            //     float a,b;
-
-            //     a = std::min(LTP_1.z,LTP_2.z);
-            //     b = std::max(LTP_1.z,LTP_2.z);
-
-            //     if(a <= LTP_3.z && LTP_3.z <= b){
-            //         intersections++;
-            //     }
-            //     continue;
-            // }
 
             if( //checks if the intersection is within the line segment
-                intersect_point.x >= std::min(global_primary_vertice1.x, global_primary_vertice2.x) - ERROR_MARG && intersect_point.x <= std::max(global_primary_vertice1.x, global_primary_vertice2.x) + ERROR_MARG &&
-                intersect_point.y >= std::min(global_primary_vertice1.y, global_primary_vertice2.y) - ERROR_MARG && intersect_point.y <= std::max(global_primary_vertice1.y, global_primary_vertice2.y) + ERROR_MARG &&
-                intersect_point.x >= std::min(global_secondary_vertice.x, primary->getPos().x) - ERROR_MARG && intersect_point.x <= std::max(global_secondary_vertice.x, primary->getPos().x) + ERROR_MARG &&
-                intersect_point.y >= std::min(global_secondary_vertice.y, primary->getPos().y) - ERROR_MARG && intersect_point.y <= std::max(global_secondary_vertice.y, primary->getPos().y) + ERROR_MARG
+                intersect_point.x >= std::min(global_primary_vertice1.x, global_primary_vertice2.x) && intersect_point.x <= std::max(global_primary_vertice1.x, global_primary_vertice2.x) &&
+                intersect_point.y >= std::min(global_primary_vertice1.y, global_primary_vertice2.y) && intersect_point.y <= std::max(global_primary_vertice1.y, global_primary_vertice2.y) &&
+                intersect_point.x >= std::min(global_secondary_vertice.x, primary->getPos().x) && intersect_point.x <= std::max(global_secondary_vertice.x, primary->getPos().x) &&
+                intersect_point.y >= std::min(global_secondary_vertice.y, primary->getPos().y) && intersect_point.y <= std::max(global_secondary_vertice.y, primary->getPos().y)
 
             ){
-                // printf("Intersection Passed %f,%f\t%d\t%f,%f\n",global_secondary_vertice.x, global_secondary_vertice.y,intersections, intersect_point.x, intersect_point.y);
-                // printf("FROM: (%f,%f),(%f,%f)\n",global_primary_vertice1.x,global_primary_vertice1.y, global_primary_vertice2.x, global_primary_vertice2.y);
                 intersections++;
+                
+                ///*DEBUG*/printf("Intersection Passed (%f,%f),(%f,%f)\t%d\t%f,%f\n",global_secondary_vertice.x, global_secondary_vertice.y,primary->getPos().x,primary->getPos().y,intersections, intersect_point.x, intersect_point.y);
+                ///*DEBUG*/printf("FROM: (%f,%f),(%f,%f)\n",global_primary_vertice1.x,global_primary_vertice1.y, global_primary_vertice2.x, global_primary_vertice2.y);
             }
+
         }
         if((intersections % 2) != 0){
             // printf("(%f,%f),",(*(*r)).x + secondary->getPos().x, (*(*r)).y + secondary->getPos().y);
             r = removeList.erase(r);    //returns pointer to the next element if erased
-        }
+        }       
         else{    //increments if nothing was erased
+            ///*DEBUG*/printf("(%f,%f),(%f,%f) %d\n",global_secondary_vertice.x, global_secondary_vertice.y, primary->getPos().x,primary->getPos().y, intersections);
             ++r;
         }
 
@@ -625,7 +534,7 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
         for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
             if (h == r) {  
 
-                printf("DEBUG RM INTERNAL_VERT %f,%f \n", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+                ///*DEBUG*/printf("DEBUG RM INTERNAL_VERT %f,%f ::%f\n", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
                 h = secondary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
@@ -633,6 +542,67 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
         }
     }
 }
+
+void plate::VertRayTest(Vector2 Vertex, plate * primary, plate * secondary,  Vector2 Offset){
+    int intersections = 0;
+
+    Vector2 global_primary_vertice = (Vector2){Vertex.x + secondary->getPos().x + Offset.x, Vertex.y + secondary->getPos().y + Offset.y};
+
+    // printf("GSV %f,%f\n", global_secondary_vertice.x, global_secondary_vertice.y);
+
+    Vector3 testingLine = getLineEquation(global_primary_vertice,secondary->getPos());
+
+    // loops through all hull vertices
+    for(auto p_vc = secondary->hull.begin(); p_vc != secondary->hull.end(); ++p_vc){
+        auto p_vn = std::next(p_vc); //next
+
+        if(p_vn == secondary->hull.end()){
+            p_vn = secondary->hull.begin();
+        }
+
+        // gets the global position of vertices
+        Vector2 global_secondary_vertice1 = (Vector2){(p_vc->x * 0.96f) + secondary->getPos().x, (p_vc->y * 0.96f) + secondary->getPos().y};
+        Vector2 global_secondary_vertice2 = (Vector2){(p_vn->x * 0.96f) + secondary->getPos().x, (p_vn->y * 0.96f) + secondary->getPos().y};
+
+
+        Vector3 lineEdge = getLineEquation(global_secondary_vertice1,global_secondary_vertice2);
+
+        Vector2 intersect_point = getLineIntersector(testingLine, lineEdge);
+        // printf("%f:%f   ", intersect_point.x,intersect_point.y);
+
+        // intersect_point.x = -intersect_point.x;
+        // intersect_point.y = -intersect_point.y;
+
+
+        if( //checks if the intersection is within the line segment
+            intersect_point.x >= std::min(global_secondary_vertice2.x, global_secondary_vertice2.x) && intersect_point.x <= std::max(global_secondary_vertice1.x, global_secondary_vertice2.x) &&
+            intersect_point.y >= std::min(global_secondary_vertice2.y, global_secondary_vertice2.y) && intersect_point.y <= std::max(global_secondary_vertice1.y, global_secondary_vertice2.y) &&
+            intersect_point.x >= std::min(global_primary_vertice.x, secondary->getPos().x) && intersect_point.x <= std::max(global_primary_vertice.x, secondary->getPos().x) &&
+            intersect_point.y >= std::min(global_primary_vertice.y, secondary->getPos().y) && intersect_point.y <= std::max(global_primary_vertice.y, secondary->getPos().y)
+
+        ){
+            // printf("Intersection Passed %f,%f\t%d\t%f,%f\n",global_secondary_vertice.x, global_secondary_vertice.y,intersections, intersect_point.x, intersect_point.y);
+            // printf("FROM: (%f,%f),(%f,%f)\n",global_primary_vertice1.x,global_primary_vertice1.y, global_primary_vertice2.x, global_primary_vertice2.y);
+            intersections++;
+        }
+
+    }
+    if((intersections % 2) != 0){
+        // printf("(%f,%f),",(*(*r)).x + secondary->getPos().x, (*(*r)).y + secondary->getPos().y);
+        for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
+            if (h->x == Vertex.x && h->y == Vertex.y) {  
+
+                ///*DEBUG*/printf("DEBUG RM INTERNAL_VERT %f,%f \n", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+                h = secondary->hull.erase(h);  // Use returned iterator
+            } else {
+                ++h;  // Only increment if not erased
+            }
+        }
+    }       
+
+
+}
+
 
 bool plate::internalTest(Vector2 testPos){    
 
@@ -646,8 +616,6 @@ bool plate::internalTest(Vector2 testPos){
         
         Vector2 global_this_vertice1 = (Vector2){p_vc->x + this->getPos().x, p_vc->y + this->getPos().y};
         Vector2 global_this_vertice2 = (Vector2){p_vn->x + this->getPos().x, p_vn->y + this->getPos().y};
-
-        
 
         float crossvalue = crossproduct(global_this_vertice1, global_this_vertice2, testPos);
 
@@ -689,7 +657,7 @@ void plate::VertAngleFilter(plate * primary, double min_angle, double max_angle)
     for(auto ptr : removeList){
         for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
             if (h == ptr) {  
-                printf("DEBUG RM ANGLE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
+                ///*DEBUG*/printf("DEBUG RM ANGLE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
                 h = primary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
@@ -702,7 +670,7 @@ void plate::AngleFilter(){
     VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
 }
 
-// using square pixel distance
+
 void plate::VertDistFilter(plate * primary, double min_distance){
     std::vector<std::list<Vector2>::iterator> removeList;
 
@@ -718,11 +686,13 @@ void plate::VertDistFilter(plate * primary, double min_distance){
         // printf("\n");
         // printf("DIST FILTER %f,%f\n%f,%f\n",vc->x,vc->y,vn->x,vn->y);
         // sqrt(pow(vn->x - vc->x,2) + pow(vn->y - vc->y,2))
-        if(Vector2Distance(*vc, *vn) <= min_distance){
-            if(Vector2Distance(*vp, *vc) <= min_distance){
-                removeList.push_back(vc);
-            }
+        if(Vector2Distance(*vc, *vn) + Vector2Distance(*vp, *vc) <= min_distance){
+            removeList.push_back(vc);
         }
+        // else 
+        // if(Vector2Distance(*vc, *vn) <= min_distance){
+        //     removeList.push_back(vc);
+        // }
 
         // if(fabs((vc->x - vn->x)) <= min_distance){
         //     removeList.push_back(vn);
@@ -738,7 +708,7 @@ void plate::VertDistFilter(plate * primary, double min_distance){
     for(auto ptr : removeList){
         for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
             if (h->x == ptr->x && h->y == ptr->y) {  
-                printf("DEBUG RM DISTANCE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
+                ///*DEBUG*/printf("DEBUG RM DISTANCE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
                 h = primary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
@@ -746,6 +716,30 @@ void plate::VertDistFilter(plate * primary, double min_distance){
         }
     }
 }
+
+
+// void plate::VertDistFilter(plate * primary, double min_distance){
+//     std::vector<std::list<Vector2>::iterator> removeList;
+
+//     for(auto vc = primary->hull.begin(); vc != primary->hull.end(); ++vc){
+//         for(auto vn = std::next(vc); vn != primary->hull.end(); ++vn){
+//             if(Vector2Distance(*vc, *vn) <= min_distance){
+//                 removeList.push_back(vc);
+//             }
+//         }
+
+//     }
+//     for(auto ptr : removeList){
+//         for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
+//             if (h->x == ptr->x && h->y == ptr->y) {  
+//                 ///*DEBUG*/printf("DEBUG RM DISTANCE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
+//                 h = primary->hull.erase(h);  // Use returned iterator
+//             } else {
+//                 ++h;  // Only increment if not erased
+//             }
+//         }
+//     }
+// }
 
 
 
@@ -870,9 +864,9 @@ void plate::render(int pos_x, int pos_y){
 
 
     DrawCircle(offset_x,offset_y,3,BLUE);
-    DrawLine(offset_x,offset_y,direction.x*50 + offset_x,direction.y*50 + offset_y,PINK);
+    // DrawLine(offset_x,offset_y,direction.x*50 + offset_x,direction.y*50 + offset_y,PINK);
     DrawText(std::to_string(this->hull.size()).c_str(), offset_x,offset_y,15,color);
-    // DrawRectangleLines({this->boundingBox.x + offset_x,this->boundingBox.y + offset_y, this->boundingBox.width - this->boundingBox.x, this->boundingBox.height - this->boundingBox.y},1,DebugRect);
+    // DrawRectangleLines(this->boundingBox.x + offset_x,this->boundingBox.y + offset_y, this->boundingBox.width - this->boundingBox.x, this->boundingBox.height - this->boundingBox.y,DebugRect);
 
 
     int i = 0;
@@ -886,18 +880,20 @@ void plate::render(int pos_x, int pos_y){
         Color edgeColor = dir > 0? GREEN:RED;
 
         DrawLine(vp.x + offset_x,vp.y + offset_y,v.x + offset_x,v.y + offset_y,edgeColor);
-        DrawLine(offset_x,offset_y,v.x + offset_x,v.y + offset_y,PURPLE);
+        // DrawLine(offset_x,offset_y,v.x + offset_x,v.y + offset_y,PURPLE);
+
         
-        
-        
-        DrawCircle(v.x + offset_x,v.y + offset_y,5,GREEN);
+        // DrawCircle(v.x + offset_x,v.y + offset_y,5,GREEN);
         DrawText(std::to_string(i).c_str(), v.x + 10 + offset_x,v.y + 10 + offset_y,15,color);
         // DrawText(std::to_string((int)round(v.x)).c_str(), v.x + 10 + offset_x,v.y + 20 + offset_y,15,WHITE);
         
         vp = v;
     }
     
-    mesh.render(getPos()); 
+    // mesh.render({
+    //     (float)offset_x,
+    //     (float)offset_y
+    // }); 
 }
 
 #endif

@@ -18,7 +18,7 @@ int GLOBAL_FLAG = 0;
 #include "heightMesh.cpp"
 #include "plate.cpp"
 #include "gridCell.cpp"
-#include "infiniteWorld.cpp"
+// #include "infiniteWorld.cpp"
 #include "fixedWorld.cpp"
 
 
