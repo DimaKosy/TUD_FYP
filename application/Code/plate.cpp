@@ -890,10 +890,10 @@ void plate::render(int pos_x, int pos_y){
         vp = v;
     }
     
-    mesh.render({
-        (float)offset_x,
-        (float)offset_y
-    }); 
+    // mesh.render({
+    //     (float)offset_x,
+    //     (float)offset_y
+    // }); 
 }
 
 #endif

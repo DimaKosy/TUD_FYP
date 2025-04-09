@@ -2,7 +2,7 @@
 #define WORLD_C
 #include "TED.hpp"
 
-#define MAX_SPEED 2
+#define MAX_SPEED 10
 #define DEPTH 3
 #define PH_COUNT 8
 #define COL_SEARCH_RAD 1
