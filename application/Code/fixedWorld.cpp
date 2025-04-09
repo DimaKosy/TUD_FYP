@@ -401,11 +401,11 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
 // goes through every grid cell and every plate thats in that cell and renders it
 void fixedWorld::render(){      
 
-    // for(int x = 0; x < this->grid_x; x++){
-    //     for(int y = 0; y < this->grid_y; y++){
-    //         grid[x][y]->DebugRender();
-    //     }        
-    // }
+    for(int x = 0; x < this->grid_x; x++){
+        for(int y = 0; y < this->grid_y; y++){
+            grid[x][y]->DebugRender();
+        }        
+    }
     
     accessWrappedEdge(renderCall);
 

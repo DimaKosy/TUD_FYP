@@ -1,6 +1,6 @@
 #include "TED.hpp"
 
-#define P_N 2
+#define P_N 5
 #define CAM_SPEED 500
 
 
@@ -8,8 +8,8 @@
 int main(int argc, char ** arg){
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth  = 128*8;
-    const int screenHeight = 128*8;
+    const int screenWidth  = 128*5;
+    const int screenHeight = 128*5;
     bool render_bool = true;
     int TimeStep = 0;
     Color mouseColor = WHITE;
