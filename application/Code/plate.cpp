@@ -306,18 +306,23 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
             }
 
 
-            ///*DEBUG*/printf("INT ATP (%f,%f),(%f,%f)\n(%f,%f),(%f,%f)\n",s_v1.x,s_v1.y,s_v2.x,s_v2.y,o_v1.x, o_v1.y, o_v2.x, o_v2.y);
-            ///*DEBUG*/printf("INT (%f,%f)\n",intersection.x,intersection.y);
+            // /*DEBUG COLLISION*/printf("INT BETWEEN:\n(%f,%f),(%f,%f)\n(%f,%f),(%f,%f)\n",s_v1.x,s_v1.y,s_v2.x,s_v2.y,o_v1.x, o_v1.y, o_v2.x, o_v2.y);
+            // /*DEBUG COLLISION*/printf("INT POINT \n(%f,%f)\n",intersection.x,intersection.y);
+
+            
 
             if( //checks if the intersection is within the line segment
                 intersection.x >= std::min(s_v1.x, s_v2.x) -0.1f && intersection.x <= std::max(s_v1.x, s_v2.x) + 0.1f &&
                 intersection.y >= std::min(s_v1.y, s_v2.y) -0.1f && intersection.y <= std::max(s_v1.y, s_v2.y) + 0.1f &&
                 intersection.x >= std::min(o_v1.x, o_v2.x) -0.1f && intersection.x <= std::max(o_v1.x, o_v2.x) + 0.1f &&
-                intersection.y >= std::min(o_v1.y, o_v2.y) -0.1f && intersection.y <= std::max(o_v1.y, o_v2.y) + 0.1f
+                intersection.y >= std::min(o_v1.y, o_v2.y) -0.1f && intersection.y <= std::max(o_v1.y, o_v2.y) + 0.1f &&
+
+                // Get distance from both lines
+                abs(crossproduct(s_v1, s_v2, intersection)) <= 0.1f &&
+                abs(crossproduct(o_v1, o_v2, intersection)) <= 0.1f
             ){
+                // /*DEBUG COLLISION*/printf("ADDED\n\n");
                 //adds it to a queue to be added
-                ///*DEBUG*/printf("(%f,%f),(%f,%f)\n(%f,%f),(%f,%f)\n",s_v1.x,s_v1.y,s_v2.x,s_v2.y, o_v1.x,o_v1.y,o_v2.x,o_v2.y);
-                ///*DEBUG*/printf("INT %f,%f\n",intersection.x,intersection.y);
 
                 Vector2 momentum = {
                     0,//((this->getDirection().x * this->speed) - (Collision->getDirection().x * Collision->speed))/2,
@@ -362,18 +367,14 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
         ///*DEBUG*/printf("DEBUG AD_1 COLLISION DEFORM %f,%f \n", selfNewPoint[i].x + this->getPos().x, selfNewPoint[i].y + this->getPos().y);
 
         this->hull.insert(selfNextPointPtr[i],selfNewPoint[i]);
-        // VertRayTest(*selfNextPointPtr[i],this, Collision, Offset);
-        // VertRayTest(*selfPrePointPtr[i], this, Collision, Offset);
     }
 
     // inseting the vertices
     for(int i = 0; i < otherNewPoint.size(); i++){
         // adds it to both hulls
         ///*DEBUG*/printf("DEBUG AD_2 COLLISION DEFORM %f,%f \n", otherNewPoint[i].x + Collision->getPos().x, otherNewPoint[i].y + Collision->getPos().y);
-        Collision->hull.insert(otherNextPointPtr[i],otherNewPoint[i]);
 
-        // VertRayTest(*otherNextPointPtr[i], Collision, this, {-Offset.x,-Offset.y});
-        // VertRayTest(*otherPrePointPtr[i],  Collision, this, {-Offset.x,-Offset.y});
+        Collision->hull.insert(otherNextPointPtr[i],otherNewPoint[i]);
     }
 
     ///*DEBUG*/printf("PREFILTER\n");
@@ -391,8 +392,6 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
 
     internalVertTest(this, Collision, Offset, otherNewPoint);
     internalVertTest(Collision, this, {-Offset.x,-Offset.y}, selfNewPoint);
-
-
 
     VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     VertAngleFilter(Collision, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
@@ -431,6 +430,10 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
     // adds all the vertices to the remove list
     for (auto h = secondary->hull.begin(); h != secondary->hull.end(); ++h) {
         // printf("\n%f,%f\n",h->x,h->y);
+
+        auto h_prev = (h == secondary->hull.begin()) ? std::prev(secondary->hull.end()) : std::prev(h);
+        auto h_next = (std::next(h) == secondary->hull.end()) ? secondary->hull.begin() : std::next(h);
+
         bool found = false;
         for(auto v : ignore){
             if(h->x == v.x && h->y == v.y){
@@ -439,11 +442,15 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
             }
         }
 
-        // for(auto v : primary->hull){
-        //     if(h->x == v.x && h->y == v.y){
-        //         found = true;
-        //         break;
-        //     }
+        // if( 
+        //     Vector2Distance(*h_prev, *h) > 1 &&
+        //     Vector2Distance(*h, *h_next) > 1
+        // ){
+        //     continue;
+        // }
+        // else{
+        //     // /*DEBUG INTERNAL*/printf("DISTS \n(%f,%f),(%f,%f)\n%f\n",h->x +secondary->getPos().x,h->y +secondary->getPos().y, h_prev->x +secondary->getPos().x, h_prev->y +secondary->getPos().y, Vector2Distance(*h_prev, *h));
+        //     // /*DEBUG INTERNAL*/printf("DISTS \n(%f,%f),(%f,%f)\n%f\n",h->x +secondary->getPos().x,h->y +secondary->getPos().y, h_prev->x +secondary->getPos().x, h_prev->y +secondary->getPos().y, Vector2Distance(*h_prev, *h));
         // }
 
         if(!found){
@@ -534,7 +541,7 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
         for (auto h = secondary->hull.begin(); h != secondary->hull.end();) {  
             if (h == r) {  
 
-                ///*DEBUG*/printf("DEBUG RM INTERNAL_VERT %f,%f ::%f\n", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
+                // /*DEBUG INTERNAL*/printf("DEBUG RM INTERNAL_VERT %f,%f ::%f\n", h->x + secondary->getPos().x, h->y + secondary->getPos().y);
                 h = secondary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
@@ -657,7 +664,7 @@ void plate::VertAngleFilter(plate * primary, double min_angle, double max_angle)
     for(auto ptr : removeList){
         for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
             if (h == ptr) {  
-                ///*DEBUG*/printf("DEBUG RM ANGLE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
+                // /*DEBUG ANG*/printf("DEBUG RM ANGLE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
                 h = primary->hull.erase(h);  // Use returned iterator
             } else {
                 ++h;  // Only increment if not erased
@@ -679,20 +686,21 @@ void plate::VertDistFilter(plate * primary, double min_distance){
         auto vn = std::next(vc); //next
         
         if(vc == primary->hull.end()){
-            vn == primary->hull.begin();
+            vn = primary->hull.begin();
         }
 
 
         // printf("\n");
         // printf("DIST FILTER %f,%f\n%f,%f\n",vc->x,vc->y,vn->x,vn->y);
         // sqrt(pow(vn->x - vc->x,2) + pow(vn->y - vc->y,2))
-        if(Vector2Distance(*vc, *vn) + Vector2Distance(*vp, *vc) <= min_distance){
-            removeList.push_back(vc);
-        }
-        // else 
-        // if(Vector2Distance(*vc, *vn) <= min_distance){
+        // if(Vector2Distance(*vc, *vn) + Vector2Distance(*vp, *vc) <= min_distance){
         //     removeList.push_back(vc);
         // }
+        // else 
+        if(Vector2Distance(*vc, *vn) <= min_distance){
+            // /*DEBUG DIST*/printf("DEBUG DISTANCE REMOVE (%f,%f), (%f,%f) : %f\n", vc->x + primary->getPos().x,vc->y + primary->getPos().y, vn->x + primary->getPos().x,vn->y + primary->getPos().y, Vector2Distance(*vc, *vn));
+            removeList.push_back(vc);
+        }
 
         // if(fabs((vc->x - vn->x)) <= min_distance){
         //     removeList.push_back(vn);
@@ -708,8 +716,9 @@ void plate::VertDistFilter(plate * primary, double min_distance){
     for(auto ptr : removeList){
         for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
             if (h->x == ptr->x && h->y == ptr->y) {  
-                ///*DEBUG*/printf("DEBUG RM DISTANCE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
+                // /*DEBUG DIST*/printf("DEBUG RM DISTANCE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
                 h = primary->hull.erase(h);  // Use returned iterator
+                break;
             } else {
                 ++h;  // Only increment if not erased
             }
@@ -839,7 +848,7 @@ void plate::SplitConcavePlate(){
         
         // wrap
         if(vn == this->hull.end()){
-            vn == this->hull.begin();
+            vn = this->hull.begin();
         }
 
 
@@ -884,7 +893,7 @@ void plate::render(int pos_x, int pos_y){
 
         
         // DrawCircle(v.x + offset_x,v.y + offset_y,5,GREEN);
-        DrawText(std::to_string(i).c_str(), v.x + 10 + offset_x,v.y + 10 + offset_y,15,color);
+        // DrawText(std::to_string(i).c_str(), v.x + 10 + offset_x,v.y + 10 + offset_y,15,color);
         // DrawText(std::to_string((int)round(v.x)).c_str(), v.x + 10 + offset_x,v.y + 20 + offset_y,15,WHITE);
         
         vp = v;

@@ -2,10 +2,10 @@
 #define WORLD_C
 #include "TED.hpp"
 
-#define MAX_SPEED 10
+#define MAX_SPEED 1
 #define DEPTH 3
 #define PH_COUNT 8
-#define COL_SEARCH_RAD 1
+#define COL_SEARCH_RAD 2
 
 class fixedWorld{
 private:
@@ -109,10 +109,10 @@ void fixedWorld::init_plates(){
             // adds a new plate to the grid cell with its center in a random position in the grid cell
             this->grid[x][y]->addNewPlate(
                     (Vector2){
-                        (rand()%(grid_size_x)),
-                        (rand()%(grid_size_y))
+                        (float)(rand()%(grid_size_x)),
+                        (float)(rand()%(grid_size_y))
                     },
-                    Vector2Normalize((Vector2){rand()%100, rand()%100}),
+                    Vector2Normalize((Vector2){(float)(rand()%100), (float)(rand()%100)}),
                     3 + (rand()%MAX_SPEED)
                 );
         }
@@ -247,33 +247,34 @@ gridCell * fixedWorld::getGridCell(int x, int y){
 }
 
 void fixedWorld::moveStepPlates(){
+    printf("\n");
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
 
             gridCell * pt = grid[x][y];
 
             for(plate * p : pt->getPlates()){
+                // /*DEBUG*/printf("ID: %p\n",p);
 
-                ///*DEBUG*/for(auto v:p->getHull()){
-                ///*DEBUG*/    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
-                ///*DEBUG*/}
-                ///*DEBUG*/printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
-
+                // /*DEBUG*/for(auto v:p->getHull()){
+                // /*DEBUG*/    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
+                // /*DEBUG*/}
+                // /*DEBUG*/printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
 
 
                 Vector2 v = p->getPos();
                 p->movePlateWrapped(map_x, map_y);
                 p->DeformBackfill();
-                // p->AngleFilter();
+                p->AngleFilter();
                 p->DebugRect = GREEN;
                 Vector2 temp = p->regenBoundingBox(map_x, map_y);
                 
                 // /*DEBUG*/printf("\nPOST MOVE\n");
-                /*DEBUG*/printf("\n");
-                /*DEBUG*/for(auto v:p->getHull()){
-                /*DEBUG*/    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
-                /*DEBUG*/}
-                /*DEBUG*/printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
+                // /*DEBUG*/printf("\n");
+                // /*DEBUG*/for(auto v:p->getHull()){
+                // /*DEBUG*/    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
+                // /*DEBUG*/}
+                // /*DEBUG*/printf("(%f,%f)\n", p->getHull().front().x  + p->getPos().x, p->getHull().front().y  + p->getPos().y);
             
             }
         }
@@ -401,11 +402,11 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
 // goes through every grid cell and every plate thats in that cell and renders it
 void fixedWorld::render(){      
 
-    for(int x = 0; x < this->grid_x; x++){
-        for(int y = 0; y < this->grid_y; y++){
-            grid[x][y]->DebugRender();
-        }        
-    }
+    // for(int x = 0; x < this->grid_x; x++){
+    //     for(int y = 0; y < this->grid_y; y++){
+    //         grid[x][y]->DebugRender();
+    //     }        
+    // }
     
     accessWrappedEdge(renderCall);
 

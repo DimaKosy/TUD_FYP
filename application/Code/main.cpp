@@ -1,6 +1,6 @@
 #include "TED.hpp"
 
-#define P_N 5
+#define P_N 4
 #define CAM_SPEED 500
 
 
@@ -8,11 +8,17 @@
 int main(int argc, char ** arg){
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth  = 128*5;
-    const int screenHeight = 128*5;
+    const int screenWidth  = 128*8;
+    const int screenHeight = 128*8;
     bool render_bool = true;
     int TimeStep = 0;
     Color mouseColor = WHITE;
+
+    clock_t start, stop;
+
+    start = clock();
+
+    printf("Start %d\n",start);
 
     SetTraceLogLevel(LOG_ERROR); 
     InitWindow(screenWidth, screenHeight, "TED");
@@ -26,11 +32,14 @@ int main(int argc, char ** arg){
     
     Vector2 exclude[] = {
         {1,1},
-        {1,0},
-        // {1,0},
-        // {0,1},
-        {0,1},
-        // {P_N-1,0},
+        {1,2},
+        {1,3},
+        // {2,1},
+        // {2,2},
+        // {2,3},
+        // {3,1},
+        // {3,2},
+        // {3,3},
         // {P_N-1,P_N-1}
     };
     // World.purge_grids_demo(exclude, sizeof(exclude) / sizeof(exclude[0]));   
@@ -38,11 +47,15 @@ int main(int argc, char ** arg){
 
     plate * followPlate = World.getGridCell(exclude[0].x,exclude[0].y)->getPlates().front();
     
-    // for(int i = 0; i < 31; i++){
+    // for(int i = 0; i < 500; i++){
     //     World.moveStepPlates();
     //     World.updatePlatePositions();
     //     TimeStep++;
     // }
+
+    stop = clock();
+    printf("End %d\n",stop);
+    printf("Total %d\n",stop - start);
 
     SetTargetFPS(240);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------

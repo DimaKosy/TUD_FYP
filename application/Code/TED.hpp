@@ -13,6 +13,7 @@ int GLOBAL_FLAG = 0;
 #include <vector>
 #include <sstream>
 #include <algorithm>
+#include <time.h>
 
 #include "collisionFunctions.cpp"
 #include "heightMesh.cpp"

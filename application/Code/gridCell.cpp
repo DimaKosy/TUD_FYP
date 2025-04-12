@@ -80,7 +80,7 @@ void gridCell::addPlate(plate * p){
 
 // initialises and adds plate to grid cell
 void gridCell::addNewPlate(Vector2 platePos, Vector2 direction, float speed){
-    printf("NEW PLATE: M %f:%f, speed %f\n",direction.x,direction.y,speed);
+    // printf("NEW PLATE: M %f:%f, speed %f\n",direction.x,direction.y,speed);
     this->plates.push_back( 
     new plate(
         (Vector2){(platePos.x * (1 - (GRID_B * 2))) + pos.x + (size_x * GRID_B), (platePos.y * (1 - (GRID_B * 2))) + pos.y + (size_y * GRID_B)},
@@ -109,7 +109,9 @@ gridCell::~gridCell(){
 
 void gridCell::DebugRender(){
     Color Col = plates.size() > 0 ? GREEN : RED;
-    DrawRectangleLines((int)pos.x,(int)pos.y,size_x, size_y, Col);
+    Col.a = 60;
+    
+    DrawRectangleLinesEx((Rectangle){(float)pos.x, (float)pos.y, (float)size_x, (float)size_y}, 3, Col);
 }
 
 #endif

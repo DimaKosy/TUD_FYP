@@ -58,7 +58,7 @@ Vector3 getLineEquation(Vector2 A, Vector2 B){
 Vector2 getIntersector(Vector3 p1, Vector3 p2){
 
     
-    double det = p1.x * p2.y - p2.x * p1.y;
+    float det = p1.x * p2.y - p2.x * p1.y;
 
     if (std::abs(det) <= 1e-9) {
         // Lines are parallel
@@ -66,8 +66,8 @@ Vector2 getIntersector(Vector3 p1, Vector3 p2){
         return (Vector2){NAN, NAN};
     }
     return (Vector2){
-        (p2.y * p1.z - p1.y * p2.z) / det,
-        (p1.x * p2.z - p2.x * p1.z) / det
+        ((p2.y * p1.z - p1.y * p2.z) / det),
+        ((p1.x * p2.z - p2.x * p1.z) / det)
     };
 }
 

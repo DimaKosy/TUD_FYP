@@ -40,7 +40,7 @@ void heightMesh::initMesh(int depth, std::list<Vector2> hull){
         meshPoints[i] = new Vector3[width];
 
         float meshMultiplier = (depth - i) / (float)depth;
-        printf("MESH M %f",meshMultiplier);
+        // printf("MESH M %f",meshMultiplier);
 
         auto h = hull.begin();
         
