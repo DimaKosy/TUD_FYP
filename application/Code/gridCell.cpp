@@ -2,7 +2,7 @@
 #define GRIDCELL_C
 #include "TED.hpp"
 
-#define GRID_B 0.185
+#define GRID_B 0.185 // margin to limit where the seed point can be created
 
 class gridCell{
 private:
@@ -23,6 +23,7 @@ public:
     void regenGridCell(Vector2 pos);
 
     void addPlate(plate * p);
+    plate * removePlate(plate * p);
     void addNewPlate(Vector2 platePos, Vector2 direction, float speed);
     const std::list<plate *> getPlates();
     void deletePlate(int i);
@@ -92,6 +93,12 @@ void gridCell::addNewPlate(Vector2 platePos, Vector2 direction, float speed){
 // gets list of plates
 const std::list<plate *> gridCell::getPlates(){
     return this->plates;
+}
+
+plate * gridCell::removePlate(plate * p){
+    this->plates.remove(p);
+
+    return p;
 }
 
 void gridCell::deletePlate(int i){

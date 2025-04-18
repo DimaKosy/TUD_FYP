@@ -2,10 +2,9 @@
 #define WORLD_C
 #include "TED.hpp"
 
-#define MAX_SPEED 1
-#define DEPTH 5
-#define PH_COUNT 8
-#define COL_SEARCH_RAD 2
+#define MAX_SPEED 1 // max speed of plates
+#define PH_COUNT 8 //required for winding order
+#define COL_SEARCH_RAD 2 //grid based search radius
 
 class fixedWorld{
 private:
@@ -251,6 +250,11 @@ void fixedWorld::moveStepPlates(){
             gridCell * pt = grid[x][y];
 
             for(plate * p : pt->getPlates()){
+
+                if(p->getHull().size() < 4){
+                    pt->removePlate(p);
+                    continue;
+                }
                 // /*DEBUG*/printf("ID: %p\n",p);
 
                 p->RebuildPlate(); //rebuilds the plate heightmesh
@@ -400,11 +404,11 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
 // goes through every grid cell and every plate thats in that cell and renders it
 void fixedWorld::render(){      
 
-    for(int x = 0; x < this->grid_x; x++){
-        for(int y = 0; y < this->grid_y; y++){
-            grid[x][y]->DebugRender();
-        }        
-    }
+    // for(int x = 0; x < this->grid_x; x++){
+    //     for(int y = 0; y < this->grid_y; y++){
+    //         grid[x][y]->DebugRender();
+    //     }        
+    // }
     
     accessWrappedEdge(renderCall);
 

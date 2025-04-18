@@ -364,6 +364,9 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     // inseting the vertices
     for(int i = 0; i < selfNewPoint.size(); i++){
         // adds the new vertice to the hull and queues a force to be enacted onto the height mesh
+        if(this->hull.size() > 30){//emergancy exit
+            break;
+        }
         this->hull.insert(selfNextPointPtr[i],selfNewPoint[i]);
         this->getMesh()->queueForces((void *)Collision, Vector2Subtract(Collision->getPos(), this->getPos()), selfNewPoint[i], FORCE_DEFAULT);
     }
@@ -371,6 +374,9 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     // inseting the vertices
     for(int i = 0; i < otherNewPoint.size(); i++){
         // adds the new vertice to the hull and queues a force to be enacted onto the height mesh
+        if(Collision->hull.size() > 30){ //emergancy exit
+            break;
+        }
         Collision->hull.insert(otherNextPointPtr[i],otherNewPoint[i]);
         Collision->getMesh()->queueForces((void *)this, Vector2Subtract(this->getPos(), Collision->getPos()), otherNewPoint[i], FORCE_DEFAULT);
     }

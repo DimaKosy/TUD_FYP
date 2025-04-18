@@ -1,11 +1,19 @@
 #include "TED.hpp"
 
-#define P_N 4
+
 #define CAM_SPEED 100
 
 
 
-int main(int argc, char ** arg){
+int main(int argc, char * arg[]){
+
+    // P_N = std::stoi(arg[1]);
+    //  = std::stoi(arg[2]);
+    // P_N = std::stoi(arg[3]);
+
+
+
+
     // Initialization
     //--------------------------------------------------------------------------------------
     const int screenWidth  = 128*8;
@@ -30,14 +38,15 @@ int main(int argc, char ** arg){
     // BeginTextureMode(target);
 
     
+    //for debugging
     Vector2 exclude[] = {
         // {0,0},
         // {1,0},
-        {1,1},
-        {1,2},
+        // {1,1},
+        // {1,2},
         // {1,3},
-        {2,1},
-        {2,2},
+        // {2,1},
+        // {2,2},
         // {2,3},
         // {3,1},
         // {3,2},
@@ -59,7 +68,7 @@ int main(int argc, char ** arg){
     printf("End %d\n",stop);
     printf("Total %d\n",stop - start);
 
-    SetTargetFPS(8);               // Set our game to run at 60 frames-per-second
+    SetTargetFPS(240);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
 
     // Main game loop
@@ -67,7 +76,6 @@ int main(int argc, char ** arg){
     {
         // Update
         //----------------------------------------------------------------------------------
-        // TODO: Update your variables here
         //----------------------------------------------------------------------------------
 
         if (IsKeyDown(KEY_UP)){
@@ -92,21 +100,12 @@ int main(int argc, char ** arg){
             TimeStep++;
         }
 
-        if (IsKeyDown(KEY_LEFT_CONTROL)){
-            // World->debugPlateVertexs();
-            World->moveStepPlates();
-            // World->moveAllPlates((Vector2){CAM_SPEED * GetFrameTime(),CAM_SPEED * GetFrameTime()});
-            TimeStep++;
-            // World->purge_grids_demo(exclude,1);
-        }
-
         if (IsKeyPressed(KEY_RIGHT_ALT)){
             render_bool = !render_bool;
         }
 
         start = clock();
         World->moveStepPlates();
-        // World->moveAllPlates((Vector2){CAM_SPEED * GetFrameTime(),CAM_SPEED * GetFrameTime()});
         TimeStep++;
 
 
@@ -125,6 +124,13 @@ int main(int argc, char ** arg){
             UnloadImage(img);
             delete World;
             World = new fixedWorld(screenWidth, screenHeight, P_N, P_N, time(0));
+            // World->purge_grids_demo(exclude, sizeof(exclude) / sizeof(exclude[0]));
+
+            BeginTextureMode(target);
+    
+            ClearBackground((Color){ 0, 0, 0, 255 });
+
+            EndTextureMode();
         }
 
         World->updatePlatePositions();

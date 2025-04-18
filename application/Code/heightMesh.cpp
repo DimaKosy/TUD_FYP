@@ -50,11 +50,6 @@ int heightMesh::getWidth(){
 
 void heightMesh::rebuildHullfromMesh(std::list<Vector2> & hull){
 
-    for(int w = 0; w < this->width -1; w+=2){
-
-        hull.push_back({meshPoints[0][w].x,meshPoints[0][w].y});
-    }
-
 }
 
 void heightMesh::initMesh(int depth, std::list<Vector2> hull){
@@ -241,17 +236,17 @@ void heightMesh::processForceQueue(){
             for(int w = 0; w <= GLOBAL_MAX_WIDTH_SPREAD; w++){
                 for(int d = 0; d <= GLOBAL_MAX_DEPTH_SPREAD - w; d++){
 
-                    // float multiplier = ((GLOBAL_MAX_WIDTH_SPREAD + GLOBAL_MAX_DEPTH_SPREAD) == 0 ? 1 : (GLOBAL_MAX_WIDTH_SPREAD + GLOBAL_MAX_DEPTH_SPREAD - w - d)/(GLOBAL_MAX_WIDTH_SPREAD + GLOBAL_MAX_DEPTH_SPREAD));
+                    float multiplier = ((GLOBAL_MAX_WIDTH_SPREAD + GLOBAL_MAX_DEPTH_SPREAD) == 0 ? 1 : (GLOBAL_MAX_WIDTH_SPREAD + GLOBAL_MAX_DEPTH_SPREAD - w - d)/(GLOBAL_MAX_WIDTH_SPREAD + GLOBAL_MAX_DEPTH_SPREAD));
 
-                    float multiplier = 1;
+                    // float multiplier = 1;
 
                     this->meshPoints[std::min(d, this->depth-1)][mod(left_index - w, this->width)].z += source.second * ((total_dist - d1 * 0.5f)/total_dist) * multiplier;
                     this->meshPoints[std::min(d, this->depth-1)][mod(right_index + w, this->width)].z += source.second * ((total_dist - d2 * 0.5f)/total_dist) * multiplier;
                 }
             }
 
-            test.push_back({this->meshPoints[0][left_index].x, this->meshPoints[0][left_index].y});
-            test.push_back({this->meshPoints[0][right_index].x, this->meshPoints[0][right_index].y});
+            // test.push_back({this->meshPoints[0][left_index].x, this->meshPoints[0][left_index].y});
+            // test.push_back({this->meshPoints[0][right_index].x, this->meshPoints[0][right_index].y});
         }
     }
 
@@ -431,7 +426,7 @@ void heightMesh::Reshape(heightMesh other){
                 }
 
                 
-                this->meshPoints[this_d][this_w].z *= 0.95f; //lowers overall height
+                this->meshPoints[this_d][this_w].z *= 0.97f; //lowers overall height
                 this->meshPoints[this_d][this_w].z = Clamp(this->meshPoints[this_d][this_w].z,1,254);
             }
             

@@ -1,9 +1,10 @@
 #ifndef TED_H
 #define TED_H
 
-int GLOBAL_FLAG = 0;
+int P_N  = 4;
+int DEPTH = 5;
 int GLOBAL_MAX_WIDTH_SPREAD = 3;
-int GLOBAL_MAX_DEPTH_SPREAD = 2;
+int GLOBAL_MAX_DEPTH_SPREAD = 3;
 
 #define DEFAULT_HEIGHT 100
 
