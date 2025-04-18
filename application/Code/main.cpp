@@ -29,7 +29,7 @@ int main(int argc, char * arg[]){
     printf("Start %d\n",start);
 
     SetTraceLogLevel(LOG_ERROR); 
-    InitWindow(screenWidth, screenHeight, "TED");
+    InitWindow(32, 32, "TED");
     srand(32);
 
     // Setting world parameters
@@ -156,13 +156,13 @@ int main(int argc, char * arg[]){
         BeginDrawing();
         ClearBackground(BLACK);
         // DrawTexture(target.texture, 0, 0, WHITE); // Draw the texture to screen
-        DrawTexturePro(target.texture, 
-            {0, 0, (float)target.texture.width, -(float)target.texture.height }, 
-            {0, 0, (float)target.texture.width, (float)target.texture.height}, 
-            (Vector2){0,0}, 
-            0.0f, WHITE);
+        // DrawTexturePro(target.texture, 
+        //     {0, 0, (float)target.texture.width, -(float)target.texture.height }, 
+        //     {0, 0, (float)target.texture.width, (float)target.texture.height}, 
+        //     (Vector2){0,0}, 
+        //     0.0f, WHITE);
 
-        DrawText(std::to_string(TimeStep).c_str(),0,0,20, WHITE);
+        // DrawText(std::to_string(TimeStep).c_str(),0,0,20, WHITE);
         // DrawText(std::to_string(GetFPS()).c_str(),0,20,20, WHITE);
         EndDrawing();
         
