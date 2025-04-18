@@ -55,6 +55,7 @@ Vector3 getLineEquation(Vector2 A, Vector2 B){
     };
 }
 
+// used for generating Voronois
 Vector2 getIntersector(Vector3 p1, Vector3 p2){
 
     
@@ -71,8 +72,8 @@ Vector2 getIntersector(Vector3 p1, Vector3 p2){
     };
 }
 
+// proper function
 Vector2 getLineIntersector(Vector3 A, Vector3 B){
-
     
     float det = A.x * B.y - B.x * A.y;
 
@@ -103,6 +104,20 @@ float crossproduct(Vector2 a, Vector2 b, Vector2 c){
     return ((b.x-a.x) * (c.y-a.y) - (b.y-a.y) * (c.x-a.x));
 }
 
+Vector2 pointWeightInTriangle(Vector2 A,Vector2 B, Vector2 C, Vector2 P){
+        double s1 = C.y - A.y;
+        double s2 = C.x - A.x;
+        double s3 = B.y - A.y;
+        double s4 = P.y - A.y;
+
+        double w1 = (A.x * s1 + s4 * s2 - P.x * s1) / (s3 * s2 - (B.x-A.x) * s1);
+        double w2 = (s4- w1 * s3) / s1;
+        return {w1,w2};
+}
+
+int mod(int value, int modulo){
+    return (modulo + (value % modulo)) % modulo;
+}
 
 // float Vector2Distance(Vector2 A, Vector2 B){
 //     return sqrt(pow(B.x - A.x,2) + pow(B.y - A.y,2));

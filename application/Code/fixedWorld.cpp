@@ -3,7 +3,7 @@
 #include "TED.hpp"
 
 #define MAX_SPEED 1
-#define DEPTH 3
+#define DEPTH 5
 #define PH_COUNT 8
 #define COL_SEARCH_RAD 2
 
@@ -88,9 +88,6 @@ fixedWorld::~fixedWorld(){
 
 // initialises the plates using a voronoi texture based off random points distributed in the grid
 void fixedWorld::init_plates(){
-    gridCell * grid_temp;
-    plate * p;
-    
 
     // printf("Grids: [%d][%d]\n",grid_x, grid_y);
     // setting the grid cell size
@@ -219,7 +216,7 @@ void fixedWorld::initPlateHull(){
             gridCell * pts = grid[x][y];
             for(plate * pt : pts->getPlates()){
                 // printf("REGENBOUND %d, %d\n",x,y);
-                pt->regenBoundingBox(map_x, map_y);
+                // pt->regenBoundingBox(map_x, map_y); 
                 pt->regenBoundingBox(map_x, map_y);
                 pt->initHeightMesh(DEPTH);
             }
@@ -247,7 +244,7 @@ gridCell * fixedWorld::getGridCell(int x, int y){
 }
 
 void fixedWorld::moveStepPlates(){
-    printf("\n");
+    // printf("\n");
     for(int x = 0; x < grid_x; x++){
         for(int y = 0; y < grid_y; y++){
 
@@ -255,6 +252,8 @@ void fixedWorld::moveStepPlates(){
 
             for(plate * p : pt->getPlates()){
                 // /*DEBUG*/printf("ID: %p\n",p);
+
+                p->RebuildPlate(); //rebuilds the plate heightmesh
 
                 // /*DEBUG*/for(auto v:p->getHull()){
                 // /*DEBUG*/    printf("(%f,%f),",v.x + p->getPos().x,v.y + p->getPos().y);
@@ -309,9 +308,8 @@ void fixedWorld::moveStepPlates(){
                             // printf("%d,%d -> %d,%d :: %f,%f\n", x, y, x + x1, y + y1, offset.x, offset.y);
                             
 
+                            // printf("\n%p -> %p\n",p,p1);
 
-                            // printf("OFFSET %f,%f\n",offset.x, offset.y);
-                            // p->selfCollisionCheck(p1);
                             if(p->selfAABBCollisionCheck(p1, offset)){
                                 // printf("\n\n");
                                 
@@ -402,11 +400,11 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
 // goes through every grid cell and every plate thats in that cell and renders it
 void fixedWorld::render(){      
 
-    // for(int x = 0; x < this->grid_x; x++){
-    //     for(int y = 0; y < this->grid_y; y++){
-    //         grid[x][y]->DebugRender();
-    //     }        
-    // }
+    for(int x = 0; x < this->grid_x; x++){
+        for(int y = 0; y < this->grid_y; y++){
+            grid[x][y]->DebugRender();
+        }        
+    }
     
     accessWrappedEdge(renderCall);
 
@@ -422,13 +420,13 @@ void fixedWorld::renderCall(int x, int y, int  offset_x, int offset_y){
                 return;
             }
             
-            BeginBlendMode(BLEND_ADDITIVE);
+            // BeginBlendMode(BLEND_ADDITIVE);
             for(plate * p : pt){
                 // (*pi)->render(x_offset, y_offset);
                 p->render(offset_x, offset_y);
                 
             }
-            EndBlendMode();
+            // EndBlendMode();
 }
 
 void fixedWorld::debugPlateVertexs(){

@@ -2,9 +2,10 @@
 #define PLATE_C
 #include "TED.hpp"
 #define MIN_ANG 10.0
-#define MAX_ANG 170.0
+#define MAX_ANG 177.0
 #define MAX_DISTANCE 1
 #define ERROR_MARG 1
+#define FORCE_DEFAULT 10.0
 
 class plate{
 private:
@@ -12,15 +13,13 @@ private:
     Vector2 direction;
     Rectangle boundingBox;
     std::list<Vector2> hull;
-    heightMesh mesh;
+    heightMesh * mesh;
+    heightMesh * tempMesh;
 
-    void internalVertTest_deprecated(plate * primary, plate * secondary, std::vector<std::list<Vector2>::iterator> * PrePointPtr, std::vector<std::list<Vector2>::iterator> * nextPointPtr, Vector2 Offset);
-    void internalVertTest_deprecated2(plate * primary, plate * secondary, Vector2 Offset);
     void internalVertTest(plate * primary, plate * secondary, Vector2 Offset, std::vector<Vector2> ignore);
     void VertRayTest(Vector2 Vertex, plate * primary, plate * secondary,  Vector2 Offset);
     void VertAngleFilter(plate * primary, double min_angle, double max_angle);
     void VertDistFilter(plate * primary, double min_distance);
-    void SplitConcavePlate();
 
 public:
     Color color;
@@ -38,6 +37,7 @@ public:
 
     Vector2 regenBoundingBox(int maxWidth, int maxHeight);
     void initHeightMesh(int depth);
+    void rebuildHeightMesh();
 
     // collision checkers
     bool selfSATCollisionCheck(plate * Collision);
@@ -55,6 +55,9 @@ public:
 
     void setPos(Vector2 pos);
     void setPixel(int x, int y);
+
+    void RebuildPlate();
+
     void render(int pos_x, int pos_y);
 };
 
@@ -70,6 +73,9 @@ plate::plate(Vector2 globalPos, Vector2 direction, float speed){
     this->direction = direction;
     this->speed = speed;
     DebugRect = GREEN;
+
+    tempMesh = new heightMesh();
+    mesh = new heightMesh();
 }
 
 plate::~plate(){
@@ -97,7 +103,7 @@ Rectangle plate::getBoundingBox(){
 }
 
 heightMesh * plate::getMesh(){
-    return &this->mesh;
+    return this->mesh;
 }
 
 // Generate bounding box
@@ -142,7 +148,21 @@ Vector2 plate::regenBoundingBox(int maxWidth, int maxHeight){
 
 
 void plate::initHeightMesh(int depth){
-    this->mesh.initMesh(depth, hull);
+    this->mesh->initMesh(depth, hull);
+}
+
+void plate::rebuildHeightMesh(){
+    mesh->processForceQueue();
+    tempMesh->freeMeshPoints();
+    tempMesh->initMesh(mesh->getDepth(), this->hull);
+    tempMesh->Reshape(*mesh);
+    heightMesh * a, * b;
+
+    a = tempMesh;
+    b = mesh;
+
+    mesh = a;
+    tempMesh = b;
 }
 
 
@@ -233,18 +253,15 @@ bool plate::selfAABBCollisionCheck(plate * Collision, Vector2 Offset){
     // minimum of other shape is outside the checking shape // maximum of other shape is outside the checking shape // checking shape minimum is outside the other shape
     if( this->boundingBox.width + this->getPos().x < Collision->boundingBox.x + Collision->getPos().x + Offset.x|| 
         Collision->boundingBox.width + Collision->getPos().x + Offset.x< this->boundingBox.x + this->getPos().x){
-        // printf("NON X\n");
         return false; // no collision
     }
     
     // minimum of other shape is outside the checking shape // maximum of other shape is outside the checking shape // checking shape minimum is outside the other shape
     if( this->boundingBox.height + this->getPos().y < Collision->boundingBox.y  + Collision->getPos().y + Offset.y || 
         Collision->boundingBox.height + Collision->getPos().y + Offset.y < this->boundingBox.y + this->getPos().y){
-        // printf("NON Y\n");
         return false; // no collision
     }
-    // printf("X %f:%f, %f:%f\n",self.x, self.width, other.x, other.width);
-    // printf("Y %f:%f, %f:%f\n",self.y, self.height, other.y, other.height);
+
     return true;
 }
 
@@ -269,7 +286,7 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
 
         std::list<Vector2>::iterator v2 = v1;
         ++v2;
-        if(v2 == this->hull.end()){    // Wrap around to the first element
+        if(v2 == this->hull.end()){     // Wrap around to the first element
             v2 = this->hull.begin(); 
         }
 
@@ -305,37 +322,30 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
                 continue;
             }
 
-
-            // /*DEBUG COLLISION*/printf("INT BETWEEN:\n(%f,%f),(%f,%f)\n(%f,%f),(%f,%f)\n",s_v1.x,s_v1.y,s_v2.x,s_v2.y,o_v1.x, o_v1.y, o_v2.x, o_v2.y);
-            // /*DEBUG COLLISION*/printf("INT POINT \n(%f,%f)\n",intersection.x,intersection.y);
-
-            
-
             if( //checks if the intersection is within the line segment
                 intersection.x >= std::min(s_v1.x, s_v2.x) -0.1f && intersection.x <= std::max(s_v1.x, s_v2.x) + 0.1f &&
                 intersection.y >= std::min(s_v1.y, s_v2.y) -0.1f && intersection.y <= std::max(s_v1.y, s_v2.y) + 0.1f &&
                 intersection.x >= std::min(o_v1.x, o_v2.x) -0.1f && intersection.x <= std::max(o_v1.x, o_v2.x) + 0.1f &&
                 intersection.y >= std::min(o_v1.y, o_v2.y) -0.1f && intersection.y <= std::max(o_v1.y, o_v2.y) + 0.1f &&
 
-                // Get distance from both lines
+                // Get distance from both lines, helps offset any floating point errors
                 abs(crossproduct(s_v1, s_v2, intersection)) <= 0.1f &&
                 abs(crossproduct(o_v1, o_v2, intersection)) <= 0.1f
             ){
-                // /*DEBUG COLLISION*/printf("ADDED\n\n");
                 //adds it to a queue to be added
 
-                Vector2 momentum = {
-                    0,//((this->getDirection().x * this->speed) - (Collision->getDirection().x * Collision->speed))/2,
-                    0//((this->getDirection().y * this->speed) - (Collision->getDirection().y * Collision->speed))/2
+                Vector2 momentum = { //disabled due to it not working
+                    0,// ((this->getDirection().x * this->speed) - (Collision->getDirection().x * Collision->speed))/4,
+                    0// ((this->getDirection().y * this->speed) - (Collision->getDirection().y * Collision->speed))/4
                 };
+                
                 Vector2 temp = {
                     intersection.x - this->getPos().x - momentum.x,
                     intersection.y - this->getPos().y - momentum.y
                 };
-                selfNewPoint.push_back(temp);
-                
-                // this->getMesh()->propogateDeform(temp, momentum, 0.5);
 
+                //queues the points to be added
+                selfNewPoint.push_back(temp);
                 selfPrePointPtr.push_back(v1);
                 selfNextPointPtr.push_back(v2);
 
@@ -344,66 +354,41 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
                     intersection.y - Collision->getPos().y - Offset.y - momentum.y
                 };
 
+                //queues the points to be added
                 otherNewPoint.push_back(temp);
-
-                // Collision->getMesh()->propogateDeform(temp, momentum, 0.5);
-                
                 otherPrePointPtr.push_back(v3);
-                otherNextPointPtr.push_back(v4);
-
-                // printf("Inserted\n\n");
-                
-                
+                otherNextPointPtr.push_back(v4);                
                 continue;
             }
-            
-            // printf("fail insert not between\n");
         }        
     }
 
     // inseting the vertices
     for(int i = 0; i < selfNewPoint.size(); i++){
-        // adds it to both hulls
-        ///*DEBUG*/printf("DEBUG AD_1 COLLISION DEFORM %f,%f \n", selfNewPoint[i].x + this->getPos().x, selfNewPoint[i].y + this->getPos().y);
-
+        // adds the new vertice to the hull and queues a force to be enacted onto the height mesh
         this->hull.insert(selfNextPointPtr[i],selfNewPoint[i]);
+        this->getMesh()->queueForces((void *)Collision, Vector2Subtract(Collision->getPos(), this->getPos()), selfNewPoint[i], FORCE_DEFAULT);
     }
 
     // inseting the vertices
     for(int i = 0; i < otherNewPoint.size(); i++){
-        // adds it to both hulls
-        ///*DEBUG*/printf("DEBUG AD_2 COLLISION DEFORM %f,%f \n", otherNewPoint[i].x + Collision->getPos().x, otherNewPoint[i].y + Collision->getPos().y);
-
+        // adds the new vertice to the hull and queues a force to be enacted onto the height mesh
         Collision->hull.insert(otherNextPointPtr[i],otherNewPoint[i]);
+        Collision->getMesh()->queueForces((void *)this, Vector2Subtract(this->getPos(), Collision->getPos()), otherNewPoint[i], FORCE_DEFAULT);
     }
 
-    ///*DEBUG*/printf("PREFILTER\n");
-    ///*DEBUG*/for(auto v:this->getHull()){
-    ///*DEBUG*/    printf("(%f,%f),",v.x + this->getPos().x,v.y + this->getPos().y);
-    ///*DEBUG*/}
-    ///*DEBUG*/printf("(%f,%f)\n", this->getHull().front().x  + this->getPos().x, this->getHull().front().y  + this->getPos().y);
-
-
-    ///*DEBUG*/for(auto v:Collision->getHull()){
-    ///*DEBUG*/    printf("(%f,%f),",v.x + Collision->getPos().x,v.y + Collision->getPos().y);
-    ///*DEBUG*/}
-    ///*DEBUG*/printf("(%f,%f)\n", Collision->getHull().front().x  + Collision->getPos().x, Collision->getHull().front().y  + Collision->getPos().y);
-
-
+    //removing vertices that are inside other plates
     internalVertTest(this, Collision, Offset, otherNewPoint);
     internalVertTest(Collision, this, {-Offset.x,-Offset.y}, selfNewPoint);
 
+    //removing vertices that are form too sharp bends or too shallow bends
     VertAngleFilter(this, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     VertAngleFilter(Collision, MIN_ANG*(PI/180.0), MAX_ANG*(PI/180.0));
     
+    //removing vertices that are too close to others
     VertDistFilter(this,1);
     VertDistFilter(Collision,1);    
     
-
-    // printf("H1\t");
-    this->SplitConcavePlate();
-    // printf("H2\t");
-    Collision->SplitConcavePlate();
     
     
     // safety clear
@@ -413,9 +398,6 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     otherNewPoint.clear();
     otherPrePointPtr.clear();
     otherNextPointPtr.clear();
-
-    // printf("\n");
-
 }
 
 void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset, std::vector<Vector2> ignore){
@@ -435,23 +417,32 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
         auto h_next = (std::next(h) == secondary->hull.end()) ? secondary->hull.begin() : std::next(h);
 
         bool found = false;
-        for(auto v : ignore){
+        for(auto v : ignore){ //skips the vertice if its in the ignore list
             if(h->x == v.x && h->y == v.y){
                 found = true;
                 break;
             }
         }
 
-        // if( 
-        //     Vector2Distance(*h_prev, *h) > 1 &&
-        //     Vector2Distance(*h, *h_next) > 1
-        // ){
-        //     continue;
-        // }
-        // else{
-        //     // /*DEBUG INTERNAL*/printf("DISTS \n(%f,%f),(%f,%f)\n%f\n",h->x +secondary->getPos().x,h->y +secondary->getPos().y, h_prev->x +secondary->getPos().x, h_prev->y +secondary->getPos().y, Vector2Distance(*h_prev, *h));
-        //     // /*DEBUG INTERNAL*/printf("DISTS \n(%f,%f),(%f,%f)\n%f\n",h->x +secondary->getPos().x,h->y +secondary->getPos().y, h_prev->x +secondary->getPos().x, h_prev->y +secondary->getPos().y, Vector2Distance(*h_prev, *h));
-        // }
+        if(Vector2Distance(*h, *h_next) + Vector2Distance(*h, *h_prev) > 400){
+            found = true;
+        }
+
+        
+
+        Vector2 global_h = Vector2Add(*h, secondary->getPos()); // changes the local vector to a global vector
+        Vector2 global_offset_h = Vector2Add(global_h, Offset); // adjusts the global vector by the offset
+        Vector2 relative_h = Vector2Subtract(global_offset_h, primary->getPos()); // changes the global vector to a vector relative to this plate
+
+        // printf("INT T %f,%f\t %f,%f\t%f,%f\n", global_h.x,global_h.y,global_offset_h.x,global_offset_h.y,relative_h.x,relative_h.y);
+
+        // doesnt add this vertice to the remove list if its outside the bounding box;
+        if(relative_h.x < primary->boundingBox.x - 10 || relative_h.x > primary->boundingBox.width + 10){
+            continue;
+        }
+        if(relative_h.y < primary->boundingBox.y - 10 || relative_h.y > primary->boundingBox.height + 10){
+            continue;
+        }
 
         if(!found){
             removeList.push_back(h);
@@ -519,8 +510,8 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
             ){
                 intersections++;
                 
-                ///*DEBUG*/printf("Intersection Passed (%f,%f),(%f,%f)\t%d\t%f,%f\n",global_secondary_vertice.x, global_secondary_vertice.y,primary->getPos().x,primary->getPos().y,intersections, intersect_point.x, intersect_point.y);
-                ///*DEBUG*/printf("FROM: (%f,%f),(%f,%f)\n",global_primary_vertice1.x,global_primary_vertice1.y, global_primary_vertice2.x, global_primary_vertice2.y);
+                // /*DEBUG*/printf("Intersection Passed (%f,%f),(%f,%f)\t%d\t%f,%f\n",global_secondary_vertice.x, global_secondary_vertice.y,primary->getPos().x,primary->getPos().y,intersections, intersect_point.x, intersect_point.y);
+                // /*DEBUG*/printf("FROM: (%f,%f),(%f,%f)\n",global_primary_vertice1.x,global_primary_vertice1.y, global_primary_vertice2.x, global_primary_vertice2.y);
             }
 
         }
@@ -529,7 +520,7 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
             r = removeList.erase(r);    //returns pointer to the next element if erased
         }       
         else{    //increments if nothing was erased
-            ///*DEBUG*/printf("(%f,%f),(%f,%f) %d\n",global_secondary_vertice.x, global_secondary_vertice.y, primary->getPos().x,primary->getPos().y, intersections);
+            // /*DEBUG*/printf("(%f,%f),(%f,%f) %d\n",global_secondary_vertice.x, global_secondary_vertice.y, primary->getPos().x,primary->getPos().y, intersections);
             ++r;
         }
 
@@ -645,7 +636,7 @@ void plate::VertAngleFilter(plate * primary, double min_angle, double max_angle)
         
         // wrap
         if(vn == primary->hull.end()){
-            vn == primary->hull.begin();
+            vn = primary->hull.begin();
         }
 
         float angle = angleBetween(*vp, *vc, *vn);
@@ -693,14 +684,14 @@ void plate::VertDistFilter(plate * primary, double min_distance){
         // printf("\n");
         // printf("DIST FILTER %f,%f\n%f,%f\n",vc->x,vc->y,vn->x,vn->y);
         // sqrt(pow(vn->x - vc->x,2) + pow(vn->y - vc->y,2))
-        // if(Vector2Distance(*vc, *vn) + Vector2Distance(*vp, *vc) <= min_distance){
-        //     removeList.push_back(vc);
-        // }
-        // else 
-        if(Vector2Distance(*vc, *vn) <= min_distance){
-            // /*DEBUG DIST*/printf("DEBUG DISTANCE REMOVE (%f,%f), (%f,%f) : %f\n", vc->x + primary->getPos().x,vc->y + primary->getPos().y, vn->x + primary->getPos().x,vn->y + primary->getPos().y, Vector2Distance(*vc, *vn));
+        if(Vector2Distance(*vc, *vn) + Vector2Distance(*vp, *vc) <= min_distance){
             removeList.push_back(vc);
         }
+        // else 
+        // if(Vector2Distance(*vc, *vn) <= min_distance){
+        //     // /*DEBUG DIST*/printf("DEBUG DISTANCE REMOVE (%f,%f), (%f,%f) : %f\n", vc->x + primary->getPos().x,vc->y + primary->getPos().y, vn->x + primary->getPos().x,vn->y + primary->getPos().y, Vector2Distance(*vc, *vn));
+        //     removeList.push_back(vc);
+        // }
 
         // if(fabs((vc->x - vn->x)) <= min_distance){
         //     removeList.push_back(vn);
@@ -822,6 +813,11 @@ void plate::DeformBackfill(){
     for(int i = 0; i < selfNewPoint.size(); i++){
         // adds it to both hulls
         this->hull.insert(selfNextPointPtr[i],selfNewPoint[i]);
+
+        // we use the diagonal distance of the bounding box to ensure that the direction line can intersect with the mesh edge
+        float max_dist = Vector2Distance({this->boundingBox.x,this->boundingBox.y}, {this->boundingBox.width, this->boundingBox.height});
+
+        this->mesh->queueForces((void *)this, Vector2Multiply(this->direction,{-max_dist,-max_dist}), selfNewPoint[i], -FORCE_DEFAULT);
     }
 
     // remove points
@@ -841,25 +837,27 @@ void plate::DeformBackfill(){
     removeList.clear();
 }
 
-void plate::SplitConcavePlate(){
+void plate::RebuildPlate(){
+    std::list<Vector2> rebuiltHull;
     for(auto vc = this->hull.begin(); vc != hull.end(); ++vc){
         auto vp = (vc == this->hull.begin()) ? std::prev(this->hull.end()) : std::prev(vc); // previous ptr
         auto vn = std::next(vc); //next
-        
-        // wrap
-        if(vn == this->hull.end()){
-            vn = this->hull.begin();
+
+        // we get the point from the current hull and check its distance compared to the next point
+
+        if(Vector2Distance(*vc, *vn) + Vector2Distance(*vp, *vc) < 10){
+            continue; //we skip it if its within the distance, this helps reduce mesh clutter
         }
 
 
-        float cp = crossproduct(*vp,*vc,*vn);
-
-        if(cp < 0){
-            // printf("Concave\n");
-            return;
-        }
+        rebuiltHull.push_back(*vc);
     }
-    // printf("Convex\n");
+
+    this->hull.clear();
+    this->hull = rebuiltHull;
+
+    rebuildHeightMesh();
+
 }
 
 void plate::setPos(Vector2 pos){
@@ -888,7 +886,9 @@ void plate::render(int pos_x, int pos_y){
 
         Color edgeColor = dir > 0? GREEN:RED;
 
-        DrawLine(vp.x + offset_x,vp.y + offset_y,v.x + offset_x,v.y + offset_y,edgeColor);
+        // DrawLine(vp.x + offset_x,vp.y + offset_y,v.x + offset_x,v.y + offset_y,edgeColor);
+
+        // DrawCircle(vp.x + offset_x, vp.y + offset_y,3,PINK);
         // DrawLine(offset_x,offset_y,v.x + offset_x,v.y + offset_y,PURPLE);
 
         
@@ -899,10 +899,10 @@ void plate::render(int pos_x, int pos_y){
         vp = v;
     }
     
-    // mesh.render({
-    //     (float)offset_x,
-    //     (float)offset_y
-    // }); 
+    mesh->render({
+        (float)offset_x,
+        (float)offset_y
+    }); 
 }
 
 #endif
