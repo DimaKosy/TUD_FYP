@@ -5,6 +5,8 @@ int GLOBAL_FLAG = 0;
 int GLOBAL_MAX_WIDTH_SPREAD = 3;
 int GLOBAL_MAX_DEPTH_SPREAD = 2;
 
+#define DEFAULT_HEIGHT 100
+
 #include <iostream>
 #include <raylib.h>
 #include <raymath.h>

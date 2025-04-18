@@ -27,7 +27,7 @@ int main(int argc, char ** arg){
     // Setting world parameters
     fixedWorld * World = new fixedWorld(screenWidth, screenHeight, P_N, P_N, time(0));
     RenderTexture2D target = LoadRenderTexture(screenWidth, screenHeight);
-    BeginTextureMode(target);
+    // BeginTextureMode(target);
 
     
     Vector2 exclude[] = {
@@ -71,10 +71,10 @@ int main(int argc, char ** arg){
         //----------------------------------------------------------------------------------
 
         if (IsKeyDown(KEY_UP)){
-            World->moveAllPlates((Vector2){0,CAM_SPEED * GetFrameTime()});
+            World->moveAllPlates((Vector2){0,-CAM_SPEED * GetFrameTime()});
         }
         if (IsKeyDown(KEY_DOWN)){
-            World->moveAllPlates((Vector2){0,-CAM_SPEED * GetFrameTime()});
+            World->moveAllPlates((Vector2){0,CAM_SPEED * GetFrameTime()});
         }
 
         if (IsKeyDown(KEY_RIGHT)){
@@ -138,7 +138,7 @@ int main(int argc, char ** arg){
         
         BeginTextureMode(target);
     
-        ClearBackground((Color){ 0, 0, 0, 255 });
+        // ClearBackground((Color){ 0, 0, 0, 255 });
         if(render_bool){
             World->render();
         }
@@ -149,7 +149,13 @@ int main(int argc, char ** arg){
 
         BeginDrawing();
         ClearBackground(BLACK);
-        DrawTexture(target.texture, 0, 0, WHITE); // Draw the texture to screen
+        // DrawTexture(target.texture, 0, 0, WHITE); // Draw the texture to screen
+        DrawTexturePro(target.texture, 
+            {0, 0, (float)target.texture.width, -(float)target.texture.height }, 
+            {0, 0, (float)target.texture.width, (float)target.texture.height}, 
+            (Vector2){0,0}, 
+            0.0f, WHITE);
+
         DrawText(std::to_string(TimeStep).c_str(),0,0,20, WHITE);
         // DrawText(std::to_string(GetFPS()).c_str(),0,20,20, WHITE);
         EndDrawing();

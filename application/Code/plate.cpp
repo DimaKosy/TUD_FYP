@@ -418,7 +418,7 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
 
 
         //doesnt add vertices to the remove list if theyre too far
-        if(Vector2Distance(*h, *h_next) + Vector2Distance(*h, *h_prev) > 400){
+        if(Vector2Distance(*h, *h_next) > 50 && Vector2Distance(*h, *h_prev) > 50){
             continue;;
         }
 
@@ -487,10 +487,6 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
             Vector3 lineEdge = getLineEquation(global_primary_vertice1,global_primary_vertice2);
 
             Vector2 intersect_point = getLineIntersector(testingLine, lineEdge);
-            // printf("%f:%f\n", intersect_point.x,intersect_point.y);
-
-            // intersect_point.x = -intersect_point.x;
-            // intersect_point.y = -intersect_point.y;
 
 
             if( //checks if the intersection is within the line segment
@@ -673,28 +669,10 @@ void plate::VertDistFilter(plate * primary, double min_distance){
         }
 
 
-        // printf("\n");
-        // printf("DIST FILTER %f,%f\n%f,%f\n",vc->x,vc->y,vn->x,vn->y);
-        // sqrt(pow(vn->x - vc->x,2) + pow(vn->y - vc->y,2))
+        // gets the distance between points and removes the point if its too close to others
         if(Vector2Distance(*vc, *vn) + Vector2Distance(*vp, *vc) <= min_distance){
             removeList.push_back(vc);
         }
-        // else 
-        // if(Vector2Distance(*vc, *vn) <= min_distance){
-        //     // /*DEBUG DIST*/printf("DEBUG DISTANCE REMOVE (%f,%f), (%f,%f) : %f\n", vc->x + primary->getPos().x,vc->y + primary->getPos().y, vn->x + primary->getPos().x,vn->y + primary->getPos().y, Vector2Distance(*vc, *vn));
-        //     removeList.push_back(vc);
-        // }
-
-        // if(fabs((vc->x - vn->x)) <= min_distance){
-        //     removeList.push_back(vn);
-        //     printf("TRUE 1 %f\n\n", fabs(vc->x - vn->x));
-        //     continue;
-        // }
-
-        // if(fabs((vc->y - vn->y)) <= min_distance){
-        //     removeList.push_back(vn);
-        //     printf("TRUE 2 %f\n\n",fabs(vc->y - vn->y));
-        // }
     }
     for(auto ptr : removeList){
         for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
@@ -708,31 +686,6 @@ void plate::VertDistFilter(plate * primary, double min_distance){
         }
     }
 }
-
-
-// void plate::VertDistFilter(plate * primary, double min_distance){
-//     std::vector<std::list<Vector2>::iterator> removeList;
-
-//     for(auto vc = primary->hull.begin(); vc != primary->hull.end(); ++vc){
-//         for(auto vn = std::next(vc); vn != primary->hull.end(); ++vn){
-//             if(Vector2Distance(*vc, *vn) <= min_distance){
-//                 removeList.push_back(vc);
-//             }
-//         }
-
-//     }
-//     for(auto ptr : removeList){
-//         for (auto h = primary->hull.begin(); h != primary->hull.end();) {  
-//             if (h->x == ptr->x && h->y == ptr->y) {  
-//                 ///*DEBUG*/printf("DEBUG RM DISTANCE %f,%f \n", h->x + primary->getPos().x, h->y + primary->getPos().y);
-//                 h = primary->hull.erase(h);  // Use returned iterator
-//             } else {
-//                 ++h;  // Only increment if not erased
-//             }
-//         }
-//     }
-// }
-
 
 
 void plate::movePlate(){
@@ -809,7 +762,7 @@ void plate::DeformBackfill(){
         // we use the diagonal distance of the bounding box to ensure that the direction line can intersect with the mesh edge
         float max_dist = Vector2Distance({this->boundingBox.x,this->boundingBox.y}, {this->boundingBox.width, this->boundingBox.height});
 
-        this->mesh->queueForces((void *)this, Vector2Multiply(this->direction,{-max_dist,-max_dist}), selfNewPoint[i], -FORCE_DEFAULT);
+        this->mesh->queueForces((void *)this, Vector2Multiply(this->direction,{-max_dist,-max_dist}), selfNewPoint[i], -FORCE_DEFAULT * 0.5);
     }
 
     // remove points
@@ -831,6 +784,10 @@ void plate::DeformBackfill(){
 
 void plate::RebuildPlate(){
     std::list<Vector2> rebuiltHull;
+
+    //gets longest diagonal of the bounding box
+    float diagonalLength = Vector2Distance({this->boundingBox.x, this->boundingBox.y}, {this->boundingBox.width, this->boundingBox.height});
+
     for(auto vc = this->hull.begin(); vc != hull.end(); ++vc){
         auto vp = (vc == this->hull.begin()) ? std::prev(this->hull.end()) : std::prev(vc); // previous ptr
         auto vn = std::next(vc); //next
@@ -847,6 +804,14 @@ void plate::RebuildPlate(){
 
     this->hull.clear();
     this->hull = rebuiltHull;
+    rebuiltHull.clear();
+
+    if(this->hull.size() > 30){
+        printf("S: %d\n",this->hull.size());
+        this->hull.clear();
+        this->mesh->rebuildHullfromMesh(hull);        
+    }
+    
 
     rebuildHeightMesh();
 

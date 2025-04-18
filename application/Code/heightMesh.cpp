@@ -3,7 +3,7 @@
 
 #include "TED.hpp"
 
-#define DEFAULT_HEIGHT 100
+
 
 class heightMesh{
 private:
@@ -25,6 +25,9 @@ public:
     ~heightMesh();
 
     int getDepth();
+    int getWidth();
+
+    void rebuildHullfromMesh(std::list<Vector2> & hull);
 
     void initMesh(int depth, std::list<Vector2>);
     void queueForces(void * owner_id, Vector2 platePosition, Vector2 source, float force);
@@ -39,6 +42,19 @@ heightMesh::heightMesh(){
 
 int heightMesh::getDepth(){
     return this->depth;
+}
+
+int heightMesh::getWidth(){
+    return this->width;
+}
+
+void heightMesh::rebuildHullfromMesh(std::list<Vector2> & hull){
+
+    for(int w = 0; w < this->width -1; w+=2){
+
+        hull.push_back({meshPoints[0][w].x,meshPoints[0][w].y});
+    }
+
 }
 
 void heightMesh::initMesh(int depth, std::list<Vector2> hull){
@@ -214,7 +230,6 @@ void heightMesh::processForceQueue(){
             total_dist = d1 + d2;
 
             // adds the changes to the height
-            printf("F1 %f\nF2 %f\n",source.second * ((total_dist - d1 * 0.5f)/total_dist),source.second * ((total_dist - d2 * 0.5f)/total_dist));
             this->meshPoints[0][left_index].z += source.second * ((total_dist - d1 * 0.5f)/total_dist);
             this->meshPoints[0][right_index].z += source.second * ((total_dist - d2 * 0.5f)/total_dist);
 
@@ -234,7 +249,6 @@ void heightMesh::processForceQueue(){
                     this->meshPoints[std::min(d, this->depth-1)][mod(right_index + w, this->width)].z += source.second * ((total_dist - d2 * 0.5f)/total_dist) * multiplier;
                 }
             }
-            printf("%f, %f\n\n", this->meshPoints[0][left_index].z, this->meshPoints[0][right_index].z);
 
             test.push_back({this->meshPoints[0][left_index].x, this->meshPoints[0][left_index].y});
             test.push_back({this->meshPoints[0][right_index].x, this->meshPoints[0][right_index].y});
