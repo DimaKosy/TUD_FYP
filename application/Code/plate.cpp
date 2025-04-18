@@ -271,11 +271,11 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     Vector3 s_lv, o_lv;
 
 
-    std::vector<Vector2> selfNewPoint;
+    std::vector<Vector2> selfNewPoint;  //new point that is to be added
     std::vector<std::list<Vector2>::iterator> selfPrePointPtr;
     std::vector<std::list<Vector2>::iterator> selfNextPointPtr;
 
-    std::vector<Vector2> otherNewPoint;
+    std::vector<Vector2> otherNewPoint; //new point that is to be added
     std::vector<std::list<Vector2>::iterator> otherPrePointPtr;
     std::vector<std::list<Vector2>::iterator> otherNextPointPtr;
     
@@ -293,6 +293,7 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
         s_v1 = (Vector2){v1->x + this->getPos().x, v1->y + this->getPos().y};
         s_v2 = (Vector2){v2->x + this->getPos().x, v2->y + this->getPos().y};
 
+        //gets line equation that goes through the two points
         s_lv = getLineEquation(s_v1,s_v2);
 
         // printf("NEW LINE\n");
@@ -307,18 +308,14 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
             o_v1 = (Vector2){v3->x + Collision->getPos().x +Offset.x, v3->y + Collision->getPos().y + Offset.y};
             o_v2 = (Vector2){v4->x + Collision->getPos().x +Offset.x, v4->y + Collision->getPos().y + Offset.y};
 
+            //gets line equation that goes through the two points
             o_lv = getLineEquation(o_v1,o_v2);
 
-            
-
-            // printf("Failing %f,%f,%f => %f,%f,%f \n",s_lv.x,s_lv.y,s_lv.z, o_lv.x, o_lv.y, o_lv.z);
-
+        
+            //find point of intersection
             Vector2 intersection = getLineIntersector(s_lv,o_lv);
 
-            
-
-            if(std::isnan(intersection.x)){
-                ///*DEBUG*/printf("NAN INTERSECT (%f,%f),(%f,%f)\n(%f,%f),(%f,%f)\n",s_v1.x,s_v1.y,s_v2.x,s_v2.y,o_v1.x, o_v1.y, o_v2.x, o_v2.y);
+            if(std::isnan(intersection.x)){ //skips it if lines are parrel
                 continue;
             }
 
