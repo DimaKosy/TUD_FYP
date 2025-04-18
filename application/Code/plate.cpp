@@ -118,6 +118,7 @@ Vector2 plate::regenBoundingBox(int maxWidth, int maxHeight){
         this->hull.front().y
     };
 
+    //gets the minimum and maximum vertices for the bounding box
     for(Vector2 v1: this->hull){
         this->boundingBox.x = std::min(this->boundingBox.x, v1.x);
         this->boundingBox.y = std::min(this->boundingBox.y, v1.y);
@@ -129,9 +130,7 @@ Vector2 plate::regenBoundingBox(int maxWidth, int maxHeight){
     TempOffset.x = (this->boundingBox.width + this->boundingBox.x)/2.0;
     TempOffset.y = (this->boundingBox.height + this->boundingBox.y)/2.0;
 
-    // printf("RGBB%f:%f\n", this->boundingBox.x, this->boundingBox.width);
-    // printf("RGBB%f:%f\n", this->boundingBox.y, this->boundingBox.height);
-    // printf("RGBB%f:%f\n\n", TempOffset.x, TempOffset.y);
+    // moves the global position 
     this->globalPos.x += TempOffset.x;
     this->globalPos.y += TempOffset.y;
     
@@ -151,11 +150,14 @@ void plate::initHeightMesh(int depth){
     this->mesh->initMesh(depth, hull);
 }
 
+// rebuilds the heightmesh 
 void plate::rebuildHeightMesh(){
-    mesh->processForceQueue();
-    tempMesh->freeMeshPoints();
-    tempMesh->initMesh(mesh->getDepth(), this->hull);
-    tempMesh->Reshape(*mesh);
+    mesh->processForceQueue();  //processes all of the queued forces
+    // tempMesh->freeMeshPoints(); //frees the mesh (disabled as compiler seems to clean it up automatically)
+    tempMesh->initMesh(mesh->getDepth(), this->hull); //initialises the mesh
+    tempMesh->Reshape(*mesh);   //reshapes the heightmesh based on nearest points of the old mesh
+    
+    // used to swap the height meshes
     heightMesh * a, * b;
 
     a = tempMesh;
@@ -224,6 +226,7 @@ bool plate::selfSATCollisionCheck(plate * Collision){
             o_v1 = (Vector2){v3->x + Collision->getPos().x, v3->y + Collision->getPos().y};
             temp = getPerpLineThroughPoint(projectionLine,o_v1);
             
+
             if(temp_i == 0){
                 o_min = temp.z;
                 o_max = temp.z;
@@ -240,7 +243,6 @@ bool plate::selfSATCollisionCheck(plate * Collision){
         if( o_max < s_min || s_max < o_min){
             return false; // no collision
         }
-        // printf("passed with  %f:%f, %f:%f \n",o_min, o_max, s_min, s_max);
     }
 
     // run collision callback
@@ -281,7 +283,6 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
     
 
     // check for edge intersections
-    // printf("\nNEW SET\n");
     for(auto v1 = this->hull.begin(); v1 != this->hull.end(); ++v1){
 
         std::list<Vector2>::iterator v2 = v1;
@@ -296,7 +297,7 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
         //gets line equation that goes through the two points
         s_lv = getLineEquation(s_v1,s_v2);
 
-        // printf("NEW LINE\n");
+        // loop through the opposing plates hull
         for(auto v3 = Collision->hull.begin(); v3 != Collision->hull.end(); ++v3){
             std::list<Vector2>::iterator v4 = v3;
             ++v4;
@@ -400,15 +401,9 @@ bool plate::selfCollisionDeformation(plate * Collision, Vector2 Offset){
 void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset, std::vector<Vector2> ignore){
     std::list<std::list<Vector2>::iterator> removeList;
 
-    ///*DEBUG*/printf("IGNORE LIST");
-    ///*DEBUG*/for(auto v: ignore){
-    ///*DEBUG*/    printf("(%f,%f),",v.x,v.y);
-    ///*DEBUG*/}
-    ///*DEBUG*/printf("\b \n\n");
 
     // adds all the vertices to the remove list
     for (auto h = secondary->hull.begin(); h != secondary->hull.end(); ++h) {
-        // printf("\n%f,%f\n",h->x,h->y);
 
         auto h_prev = (h == secondary->hull.begin()) ? std::prev(secondary->hull.end()) : std::prev(h);
         auto h_next = (std::next(h) == secondary->hull.end()) ? secondary->hull.begin() : std::next(h);
@@ -421,8 +416,10 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
             }
         }
 
+
+        //doesnt add vertices to the remove list if theyre too far
         if(Vector2Distance(*h, *h_next) + Vector2Distance(*h, *h_prev) > 400){
-            found = true;
+            continue;;
         }
 
         
@@ -430,8 +427,6 @@ void plate::internalVertTest(plate * primary, plate * secondary, Vector2 Offset,
         Vector2 global_h = Vector2Add(*h, secondary->getPos()); // changes the local vector to a global vector
         Vector2 global_offset_h = Vector2Add(global_h, Offset); // adjusts the global vector by the offset
         Vector2 relative_h = Vector2Subtract(global_offset_h, primary->getPos()); // changes the global vector to a vector relative to this plate
-
-        // printf("INT T %f,%f\t %f,%f\t%f,%f\n", global_h.x,global_h.y,global_offset_h.x,global_offset_h.y,relative_h.x,relative_h.y);
 
         // doesnt add this vertice to the remove list if its outside the bounding box;
         if(relative_h.x < primary->boundingBox.x - 10 || relative_h.x > primary->boundingBox.width + 10){
