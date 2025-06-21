@@ -15,7 +15,6 @@ private:
 
     int world_seed;
 
-    Texture2D worldMap;
     gridCell *** grid;
 
     void renderCall(int x, int y, int  offset_x, int offset_y);
@@ -77,7 +76,6 @@ fixedWorld::fixedWorld(int map_x, int map_y, int grid_x, int grid_y, int seed){
 }
 
 fixedWorld::~fixedWorld(){
-    UnloadTexture(this->worldMap);
     // free the grid
     for (int i = 0; i < grid_x; ++i) {
         delete[] this->grid[i];
@@ -252,7 +250,7 @@ void fixedWorld::moveStepPlates(){
             for(plate * p : pt->getPlates()){
 
                 if(p->getHull().size() < 4){
-                    pt->removePlate(p);
+                    pt->popPlate(p);
                     continue;
                 }
                 // /*DEBUG*/printf("ID: %p\n",p);
@@ -404,11 +402,11 @@ void fixedWorld::accessWrappedEdge(void (fixedWorld::* func)(int x, int y, int o
 // goes through every grid cell and every plate thats in that cell and renders it
 void fixedWorld::render(){      
 
-    // for(int x = 0; x < this->grid_x; x++){
-    //     for(int y = 0; y < this->grid_y; y++){
-    //         grid[x][y]->DebugRender();
-    //     }        
-    // }
+    for(int x = 0; x < this->grid_x; x++){
+        for(int y = 0; y < this->grid_y; y++){
+            grid[x][y]->DebugRender();
+        }        
+    }
     
     accessWrappedEdge(renderCall);
 

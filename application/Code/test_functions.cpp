@@ -1,3 +1,8 @@
+/*
+C21376161
+These are a mess and where only used for quick testing
+*/
+
 #ifndef TEST_C
 #define TEST_C
 #include "TED.hpp"

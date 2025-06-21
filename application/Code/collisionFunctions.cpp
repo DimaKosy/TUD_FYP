@@ -72,7 +72,7 @@ Vector2 getIntersector(Vector3 p1, Vector3 p2){
     };
 }
 
-// proper function
+// for general line intersections
 Vector2 getLineIntersector(Vector3 A, Vector3 B){
     
     float det = A.x * B.y - B.x * A.y;
@@ -88,6 +88,7 @@ Vector2 getLineIntersector(Vector3 A, Vector3 B){
     };
 }
 
+// get the angle between 3 points
 float angleBetween(Vector2 A, Vector2 B, Vector2 C){
     Vector2 u = {A.x - B.x, A.y - B.y};
     Vector2 v = {C.x - B.x, C.y - B.y};
@@ -104,6 +105,7 @@ float crossproduct(Vector2 a, Vector2 b, Vector2 c){
     return ((b.x-a.x) * (c.y-a.y) - (b.y-a.y) * (c.x-a.x));
 }
 
+// get the weights of a point inside a triangle
 Vector2 pointWeightInTriangle(Vector2 A,Vector2 B, Vector2 C, Vector2 P){
         double s1 = C.y - A.y;
         double s2 = C.x - A.x;

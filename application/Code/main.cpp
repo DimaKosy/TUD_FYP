@@ -7,17 +7,19 @@
 
 int main(int argc, char * arg[]){
 
-    // P_N = std::stoi(arg[1]);
-    //  = std::stoi(arg[2]);
-    // P_N = std::stoi(arg[3]);
-
+    P_N = std::stoi(arg[1]);    // amount of plates
+    DEPTH = std::stoi(arg[2]);  // how many layers does the height mesh have
+    GLOBAL_MAX_WIDTH_SPREAD = std::stoi(arg[3]);    // how far the spread of the collisions affects    
+    GLOBAL_MAX_DEPTH_SPREAD = std::stoi(arg[4]);    // how far the spread of the collisions affects
+    int screenWidth  = std::stoi(arg[5]);   // screen size
+    int screenHeight = std::stoi(arg[6]);   // screen size
+    
 
 
 
     // Initialization
     //--------------------------------------------------------------------------------------
-    const int screenWidth  = 128*8;
-    const int screenHeight = 128*8;
+    
     bool render_bool = true;
     int TimeStep = 0;
     Color mouseColor = WHITE;
@@ -30,7 +32,7 @@ int main(int argc, char * arg[]){
 
     SetTraceLogLevel(LOG_ERROR); 
     InitWindow(32, 32, "TED");
-    srand(32);
+    srand(time(0));
 
     // Setting world parameters
     fixedWorld * World = new fixedWorld(screenWidth, screenHeight, P_N, P_N, time(0));
@@ -45,7 +47,7 @@ int main(int argc, char * arg[]){
         // {1,1},
         // {1,2},
         // {1,3},
-        // {2,1},
+        {2,1},
         // {2,2},
         // {2,3},
         // {3,1},
@@ -68,7 +70,7 @@ int main(int argc, char * arg[]){
     printf("End %d\n",stop);
     printf("Total %d\n",stop - start);
 
-    SetTargetFPS(240);               // Set our game to run at 60 frames-per-second
+    SetTargetFPS(500);               // Set our game to run at 60 frames-per-second
     //--------------------------------------------------------------------------------------
 
     // Main game loop
@@ -109,11 +111,11 @@ int main(int argc, char * arg[]){
         TimeStep++;
 
 
-        if(TimeStep%80 == 0){
-            // BeginTextureMode(target);
-            // ClearBackground(RAYWHITE);
-            //     World->render();
-            // EndTextureMode();
+        if(TimeStep%80 == 0){   // saves it after 80 steps
+            BeginTextureMode(target);
+            ClearBackground(RAYWHITE);
+                World->render();
+            EndTextureMode();
 
 
             Image img = LoadImageFromTexture(target.texture);
@@ -131,7 +133,9 @@ int main(int argc, char * arg[]){
             ClearBackground((Color){ 0, 0, 0, 255 });
 
             EndTextureMode();
+            exit(0);
         }
+
 
         World->updatePlatePositions();
 
@@ -144,7 +148,7 @@ int main(int argc, char * arg[]){
         
         BeginTextureMode(target);
     
-        // ClearBackground((Color){ 0, 0, 0, 255 });
+        ClearBackground((Color){ 0, 0, 0, 255 });
         if(render_bool){
             World->render();
         }
@@ -155,14 +159,13 @@ int main(int argc, char * arg[]){
 
         BeginDrawing();
         ClearBackground(BLACK);
-        // DrawTexture(target.texture, 0, 0, WHITE); // Draw the texture to screen
         // DrawTexturePro(target.texture, 
         //     {0, 0, (float)target.texture.width, -(float)target.texture.height }, 
         //     {0, 0, (float)target.texture.width, (float)target.texture.height}, 
         //     (Vector2){0,0}, 
         //     0.0f, WHITE);
 
-        // DrawText(std::to_string(TimeStep).c_str(),0,0,20, WHITE);
+        DrawText(std::to_string(TimeStep).c_str(),0,0,20, WHITE);
         // DrawText(std::to_string(GetFPS()).c_str(),0,20,20, WHITE);
         EndDrawing();
         

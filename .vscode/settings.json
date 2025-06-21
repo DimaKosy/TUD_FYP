@@ -46,7 +46,9 @@
         "streambuf": "cpp",
         "cinttypes": "cpp",
         "typeinfo": "cpp",
-        "sstream": "cpp"
+        "sstream": "cpp",
+        "map": "cpp"
     },
+    "debug.allowBreakpointsEverywhere": true,
     "C_Cpp.default.compilerPath": "C:/msys64/mingw64/bin/g++.exe"
 }

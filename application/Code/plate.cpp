@@ -5,7 +5,7 @@
 #define MAX_ANG 177.0
 #define MAX_DISTANCE 1
 #define ERROR_MARG 1
-#define FORCE_DEFAULT 10.0
+#define FORCE_DEFAULT 3.0
 
 class plate{
 private:
@@ -22,9 +22,7 @@ private:
     void VertDistFilter(plate * primary, double min_distance);
 
 public:
-    Color color;
-    Color DebugRect;
-
+    Color DebugRect = GREEN;
     float speed;
 
     plate(Vector2 globalPos, Vector2 direction, float speed);
@@ -64,15 +62,8 @@ public:
 // initialises the plate with global pos
 plate::plate(Vector2 globalPos, Vector2 direction, float speed){
     this->globalPos = globalPos;
-    this->color = (Color){
-        .r = (unsigned char)(rand()%256),
-        .g = (unsigned char)(rand()%256),
-        .b = (unsigned char)(rand()%256),
-        .a = 255
-    };
     this->direction = direction;
     this->speed = speed;
-    DebugRect = GREEN;
 
     tempMesh = new heightMesh();
     mesh = new heightMesh();
@@ -827,40 +818,40 @@ void plate::setPos(Vector2 pos){
     this->globalPos = pos;
 }
 
-// renders the plate
+// renders the plate (only renders mesh for final output)
 void plate::render(int pos_x, int pos_y){
     int offset_x = globalPos.x + pos_x;
     int offset_y = globalPos.y + pos_y;
 
 
-    DrawCircle(offset_x,offset_y,3,BLUE);
+    // DrawCircle(offset_x,offset_y,3,BLUE);
     // DrawLine(offset_x,offset_y,direction.x*50 + offset_x,direction.y*50 + offset_y,PINK);
-    DrawText(std::to_string(this->hull.size()).c_str(), offset_x,offset_y,15,color);
+    // DrawText(std::to_string(this->hull.size()).c_str(), offset_x,offset_y,15,WHITE);
     // DrawRectangleLines(this->boundingBox.x + offset_x,this->boundingBox.y + offset_y, this->boundingBox.width - this->boundingBox.x, this->boundingBox.height - this->boundingBox.y,DebugRect);
 
 
-    int i = 0;
-    Vector2 vp = this->hull.back();
-    for(Vector2 v : this->hull){
-        i++;
-        // printf("%d,%d\n",v.x,v.y);
-        Vector2 normal_p = Vector2Normalize({-(vp.y - v.y),(vp.x - v.x)});
-        float dir = (normal_p.x*direction.x + normal_p.y*direction.y);
+    // int i = 0;
+    // Vector2 vp = this->hull.back();
+    // for(Vector2 v : this->hull){
+    //     i++;
+    //     // printf("%d,%d\n",v.x,v.y);
+    //     // Vector2 normal_p = Vector2Normalize({-(vp.y - v.y),(vp.x - v.x)});
+    //     // float dir = (normal_p.x*direction.x + normal_p.y*direction.y);
 
-        Color edgeColor = dir > 0? GREEN:RED;
+    //     // Color edgeColor = dir > 0? GREEN:RED;
 
-        // DrawLine(vp.x + offset_x,vp.y + offset_y,v.x + offset_x,v.y + offset_y,edgeColor);
+    //     // DrawLineEx({vp.x + offset_x,vp.y + offset_y},{v.x + offset_x,v.y + offset_y},5,edgeColor);
 
-        // DrawCircle(vp.x + offset_x, vp.y + offset_y,3,PINK);
-        // DrawLine(offset_x,offset_y,v.x + offset_x,v.y + offset_y,PURPLE);
+    //     // DrawCircle(vp.x + offset_x, vp.y + offset_y,3,PINK);
+    //     // DrawLine(offset_x,offset_y,v.x + offset_x,v.y + offset_y,PURPLE);
 
         
-        // DrawCircle(v.x + offset_x,v.y + offset_y,5,GREEN);
-        // DrawText(std::to_string(i).c_str(), v.x + 10 + offset_x,v.y + 10 + offset_y,15,color);
-        // DrawText(std::to_string((int)round(v.x)).c_str(), v.x + 10 + offset_x,v.y + 20 + offset_y,15,WHITE);
+    //     // DrawCircle(v.x + offset_x,v.y + offset_y,5,GREEN);
+    //     // DrawText(std::to_string(i).c_str(), v.x + 10 + offset_x,v.y + 10 + offset_y,15,color);
+    //     // DrawText(std::to_string((int)round(v.x)).c_str(), v.x + 10 + offset_x,v.y + 20 + offset_y,15,WHITE);
         
-        vp = v;
-    }
+    //     vp = v;
+    // }
     
     mesh->render({
         (float)offset_x,

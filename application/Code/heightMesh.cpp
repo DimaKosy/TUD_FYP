@@ -225,8 +225,8 @@ void heightMesh::processForceQueue(){
             total_dist = d1 + d2;
 
             // adds the changes to the height
-            this->meshPoints[0][left_index].z += source.second * ((total_dist - d1 * 0.5f)/total_dist);
-            this->meshPoints[0][right_index].z += source.second * ((total_dist - d2 * 0.5f)/total_dist);
+            this->meshPoints[0][left_index].z += source.second * ((total_dist - d1)/total_dist);
+            this->meshPoints[0][right_index].z += source.second * ((total_dist - d2)/total_dist);
 
             //spreads it past initial points
 
@@ -236,12 +236,23 @@ void heightMesh::processForceQueue(){
             for(int w = 0; w <= GLOBAL_MAX_WIDTH_SPREAD; w++){
                 for(int d = 0; d <= GLOBAL_MAX_DEPTH_SPREAD - w; d++){
 
-                    float multiplier = ((GLOBAL_MAX_WIDTH_SPREAD + GLOBAL_MAX_DEPTH_SPREAD) == 0 ? 1 : (GLOBAL_MAX_WIDTH_SPREAD + GLOBAL_MAX_DEPTH_SPREAD - w - d)/(GLOBAL_MAX_WIDTH_SPREAD + GLOBAL_MAX_DEPTH_SPREAD));
+                    float multiplier =  (GLOBAL_MAX_DEPTH_SPREAD - d)/(std::max(1,GLOBAL_MAX_DEPTH_SPREAD)) *
+                                        (GLOBAL_MAX_WIDTH_SPREAD - w)/(std::max(1,GLOBAL_MAX_WIDTH_SPREAD));
 
-                    // float multiplier = 1;
 
-                    this->meshPoints[std::min(d, this->depth-1)][mod(left_index - w, this->width)].z += source.second * ((total_dist - d1 * 0.5f)/total_dist) * multiplier;
-                    this->meshPoints[std::min(d, this->depth-1)][mod(right_index + w, this->width)].z += source.second * ((total_dist - d2 * 0.5f)/total_dist) * multiplier;
+
+                    this->meshPoints[std::min(d, this->depth-1)][mod(left_index - w, this->width)].z  += pow(source.second * ((total_dist - d1 * 0.5f)/total_dist) * multiplier, 2);
+                    this->meshPoints[std::min(d, this->depth-1)][mod(right_index + w, this->width)].z += pow(source.second * ((total_dist - d2 * 0.5f)/total_dist) * multiplier, 2);
+
+
+                    // float secondary_d1 = Vector2Distance({this->meshPoints[0][left_index].x, this->meshPoints[0][left_index].y} ,source.first);
+                    // float secondary_d2 = Vector2Distance({this->meshPoints[0][right_index].x, this->meshPoints[0][right_index].y},source.first);
+
+                    // float secondary_total_dist = d1 + d2;
+                    // float multiplier = 0.1f;
+
+                    // this->meshPoints[std::min(d, this->depth-1)][mod(left_index - w, this->width)].z  += multiplier * source.second * ((secondary_total_dist - secondary_d1)/secondary_total_dist);
+                    // this->meshPoints[std::min(d, this->depth-1)][mod(right_index + w, this->width)].z += multiplier * source.second * ((secondary_total_dist - secondary_d2)/secondary_total_dist);
                 }
             }
 
@@ -471,18 +482,21 @@ void heightMesh::render(Vector2 offset){
 
             // Vertex 1
             int col1 = meshPoints[d][w].z;
-            rlColor4ub(col1, col1, col1, 255);   // Red
+            rlColor4ub(col1, col1, col1, 255);   
+            // rlColor4ub(255, 0, 0, 255); // Red
             rlVertex2f(meshPoints[d][w].x + offset.x, meshPoints[d][w].y + offset.y);
 
             // Vertex 2
 
             int col2 = (d + 1 == this->depth?centerPoint.z:meshPoints[d + 1][w].z);
-            rlColor4ub(col2, col2, col2, 255);   // Green
+            rlColor4ub(col2, col2, col2, 255);  
+            // rlColor4ub(0, 255, 0, 255); // Green
             rlVertex2f(next_x, next_y);
 
             // Vertex 3
             int col3 = (d + 1 == this->depth?centerPoint.z:meshPoints[d + 1][(w + 1) % this->width].z);
-            rlColor4ub(col3, col3, col3, 255);   // Blue
+            rlColor4ub(col3, col3, col3, 255);  
+            // rlColor4ub(0, 0, 255, 255);    // Blue
             rlVertex2f(next_x_angled, next_y_angled);
 
             //Vertex 4
